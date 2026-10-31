@@ -191,6 +191,29 @@ async function main() {
     assert.ok(!/passwordHash|resetToken|resetExpires|\$2[aby]\$/.test(t));
   });
 
+  // ---------------- the billing run endpoint (the most sensitive one: it creates invoices) ----------------
+  await check("billing run: anonymous and CUSTOMER can neither preview nor start it, and nothing is created", async () => {
+    const countBefore = await db.invoice.count();
+    for (const [who, cookie] of [["anonymous", null], ["customer", cust]] as const) {
+      for (const method of ["GET", "POST"] as const) {
+        const r = await call(cookie, method, "/api/billing/run");
+        assert.ok(who === "anonymous" ? [307, 401].includes(r.status) : r.status === 403, `${who} ${method}: HTTP ${r.status}`);
+        if (who === "customer") assert.equal(typeof r.json?.error, "string", `${method}: error body is not JSON {error}`);
+        assert.ok(!("due" in (r.json ?? {})) && !("created" in (r.json ?? {})), `${who} ${method} got billing data`);
+      }
+    }
+    assert.equal(await db.invoice.count(), countBefore, "an invoice was created by a caller who is not staff");
+  });
+  await check("billing run: STAFF and ADMIN can preview; the preview is a whole number and bills nothing", async () => {
+    const countBefore = await db.invoice.count();
+    for (const who of [staff, admin]) {
+      const r = await call(who, "GET", "/api/billing/run");
+      assert.equal(r.status, 200);
+      assert.ok(Number.isInteger(r.json?.due) && (r.json!.due as number) >= 0, `due = ${String(r.json?.due)}`);
+    }
+    assert.equal(await db.invoice.count(), countBefore, "a preview created invoices");
+  });
+
   // ---------------- the /invoices/[id]/print page ----------------
   const printPage = async (cookie: string | null, id: string) => plain(await call(cookie, "GET", `/invoices/${id}/print`));
   await check("print page: anonymous goes to login, CUSTOMER is sent to the portal, neither sees invoice data", async () => {
