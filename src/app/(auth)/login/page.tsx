@@ -27,8 +27,9 @@ export default function Login() {
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button className="w-full rounded bg-black p-2 text-white">Sign in</button>
       </form>
-      <p className="text-sm">
+      <p className="flex justify-between text-sm">
         <Link href="/register" className="underline">Create account</Link>
+        <Link href="/forgot-password" className="underline">Forgot password?</Link>
       </p>
     </main>
   );
