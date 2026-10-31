@@ -8,6 +8,8 @@
     "typecheck": "tsc --noEmit",
     "check:billing": "tsx scripts/check-billing.ts",
     "check:billing-run": "tsx scripts/check-billing-run.ts",
+    "check:invoices": "tsx scripts/check-invoices.ts",
+    "check:invoice-http": "tsx scripts/check-invoice-http.ts",
     "check:period": "tsx scripts/check-period.ts",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
