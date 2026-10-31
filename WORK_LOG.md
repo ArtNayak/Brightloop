@@ -43,3 +43,27 @@
 - `git diff --check` - passed.
 
 **Security/leakage review:** GET is restricted to ADMIN/STAFF; every mutation requires ADMIN before parsing the request. Staff receives no mutation controls. Unexpected API failures return generic messages. Role behavior was reviewed in the route and page code; database-backed HTTP role tests were not run because no `DATABASE_URL` is configured.
+
+## Person 2 - push 5/7: plans
+
+**Read:** project overview decisions D5, D7, D9 and Person 2 T6 requirements. The plans branch was cut from latest `origin/main` as a separate push; the products push 4 PR was still outstanding, so this branch does not include its files.
+
+**Plan:** add regression checks first for plan validation, Decimal storage, behavior flags, availability and period immutability; add a service, ADMIN-only create/update APIs with ADMIN/STAFF read APIs, picker contract, paginated list, editor/detail pages and loading states.
+
+**Implemented:** `/plans` supports name and period filters, 25-row pagination and Upcoming/Available/Ended badges. `/plans/new` and `/plans/[id]` cover all requested fields and explain the four per-plan behavior flags. APIs include `GET/POST /api/plans`, `GET/PATCH /api/plans/[id]` and `GET /api/plans?available=1`; picker responses serialize Decimal prices as strings and only include plans available on today's inclusive UTC calendar day. Server-side validation rejects negative/over-precision/oversized prices, invalid dates and quantities below one. A plan's billing period cannot change after a subscription references it (409).
+
+**Red/green evidence:** before implementing the plan service, `npm run check:plans` failed because `src/lib/catalog/plans` did not exist. After implementation, all six plan service/schema/availability checks passed.
+
+**Verification:**
+
+- `npm run typecheck` - passed.
+- `npm run check:plans` - 6/6 passed.
+- `npm run check:taxes` - 9/9 passed.
+- `npm run check:catalog-seed` - passed.
+- `npm run check:period` - passed.
+- `npm run check:billing` - 20/20 passed.
+- `npm run build` - passed; includes `/api/plans`, `/api/plans/[id]`, `/plans`, `/plans/new`, and `/plans/[id]`.
+- `git diff --check` - passed.
+- `npm run check:products` was unavailable on this branch because push 4 is not merged into its `origin/main` base yet; the command is not defined in this checkout.
+
+**Security/leakage review:** plan list and detail GET routes require ADMIN or STAFF; POST and PATCH require ADMIN before parsing request data. New plan page is ADMIN-only; the detail page supplies STAFF read-only controls. Unexpected API errors return generic messages; money values serialize as strings. No schema changes. Database-backed HTTP role tests were not run because no test database is configured.
