@@ -43,6 +43,7 @@ const STAFF_ONLY: Call[] = [
   ["POST", "/api/payments", {}], ["GET", "/api/plans"], ["GET", "/api/plans/x"], ["GET", "/api/products"], ["GET", "/api/products/x"],
   ["GET", "/api/taxes"], ["GET", "/api/subscriptions"], ["POST", "/api/subscriptions", {}], ["GET", "/api/subscriptions/x"],
   ["PATCH", "/api/subscriptions/x", {}], ["GET", "/api/subscriptions/customers"],
+  ["GET", "/api/customers"], ["POST", "/api/customers", {}], ["GET", "/api/customers/x"],
   ["GET", "/api/discounts"], ["GET", "/api/discounts/x"], ["GET", "/api/quotation-templates"], ["POST", "/api/quotation-templates", {}],
   ["GET", "/api/quotation-templates/x"], ["PATCH", "/api/quotation-templates/x", {}], ["DELETE", "/api/quotation-templates/x"],
 ];
@@ -87,8 +88,8 @@ async function checkNoSecrets(admin: string) {
   const secret = /passwordHash|resetToken|resetExpires|\$2[aby]\$\d\d\$/;
   const urls = [
     "/api/invoices", `/api/invoices/${inv.id}`, "/api/subscriptions", `/api/subscriptions/${sub.id}`, "/api/subscriptions/customers",
-    "/api/plans", "/api/products", "/api/taxes", "/api/discounts", "/api/quotation-templates",
-    "/reports", "/payments", "/invoices", `/invoices/${inv.id}`, "/subscriptions", `/subscriptions/${sub.id}`, "/staff", "/products", "/plans",
+    "/api/plans", "/api/products", "/api/taxes", "/api/discounts", "/api/quotation-templates", "/api/customers",
+    "/reports", "/payments", "/invoices", `/invoices/${inv.id}`, "/subscriptions", `/subscriptions/${sub.id}`, "/staff", "/products", "/plans", "/customers",
   ];
   for (const u of urls) {
     const r = await call(admin, ["GET", u]);
