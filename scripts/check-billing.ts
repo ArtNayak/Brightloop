@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Prisma } from "@prisma/client";
 import { calcInvoice, type Disc, type Line } from "../src/lib/billing/calc";
 import { PAYMENT_TERMS, dueDateFor, termsDays } from "../src/lib/billing/terms";
+import { escapeHtml, invoiceEmail, type EmailInvoice } from "../src/lib/billing/invoice-email";
 
 const D = (v: string | number) => new Prisma.Decimal(v);
 const fx = (v: Prisma.Decimal) => v.toFixed(2);
@@ -183,6 +184,52 @@ test("payment terms -> due date", () => {
   const issued = new Date("2026-01-20T00:00:00.000Z");
   assert.equal(dueDateFor(issued, "NET_15").toISOString(), "2026-02-04T00:00:00.000Z");
   assert.equal(dueDateFor(issued, "IMMEDIATE").toISOString(), issued.toISOString());
+});
+
+
+// ---------- invoice email ----------
+const emailInv = (over: Partial<EmailInvoice> = {}): EmailInvoice => ({
+  number: "INV-0007",
+  customerName: "Asha Rao",
+  periodStart: "2026-10-01",
+  periodEnd: "2026-11-01",
+  issueDate: "2026-10-31",
+  dueDate: "2026-11-30",
+  subtotal: "2000.00",
+  discountTotal: "200.00",
+  taxTotal: "324.00",
+  total: "2124.00",
+  paid: "500.00",
+  outstanding: "1624.00",
+  lines: [{ description: "Brightloop CRM (Brand: Odoo)", quantity: 2, unitPrice: "1000.00", taxPercent: "18.00", discountAmount: "200.00", amount: "1800.00" }],
+  ...over,
+});
+
+test("escapeHtml neutralises markup and quotes", () => {
+  assert.equal(escapeHtml(`<b onclick="x">&'`), "&lt;b onclick=&quot;x&quot;&gt;&amp;&#39;");
+});
+
+test("invoice email: subject, link, key numbers and lines", () => {
+  const { subject, html } = invoiceEmail(emailInv(), "https://app.test/portal/invoices/abc");
+  assert.equal(subject, "Invoice INV-0007 from Brightloop");
+  assert.ok(html.includes('href="https://app.test/portal/invoices/abc"'));
+  for (const needle of ["INV-0007", "Asha Rao", "2026-11-30", "Brightloop CRM (Brand: Odoo)", "2124.00", "1624.00", "200.00", "324.00"])
+    assert.ok(html.includes(needle), `missing ${needle}`);
+});
+
+test("invoice email: customer-controlled text is HTML-escaped (no script injection)", () => {
+  const evil = `<script>alert(1)</script>`;
+  const { html } = invoiceEmail(
+    emailInv({ customerName: evil, lines: [{ description: `<img src=x onerror=alert(1)>`, quantity: 1, unitPrice: "1.00", taxPercent: "0.00", discountAmount: "0.00", amount: "1.00" }] }),
+    "https://app.test/x",
+  );
+  assert.ok(!html.includes("<script>"), "raw <script> leaked");
+  assert.ok(!html.includes("<img"), "raw <img> leaked");
+  assert.ok(html.includes("&lt;script&gt;"));
+});
+
+test("invoice email: a link that is not http(s) is rejected", () => {
+  assert.throws(() => invoiceEmail(emailInv(), "javascript:alert(1)"));
 });
 
 let failed = 0;
