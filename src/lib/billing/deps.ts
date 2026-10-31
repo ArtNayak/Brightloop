@@ -1,36 +1,9 @@
 // Everything the billing run needs from other people's folders lives behind this one file.
-// P2 (period.ts, discount-status.ts) and P3 (subscription-lifecycle.ts) haven't merged yet, so these are
+// P2's period.ts is wired in; P2's discount-status.ts and P3 (subscription-lifecycle.ts) haven't merged yet, so these are
 // temporary versions with the agreed signatures. When theirs land, replace each block with a re-export:
-//   export { addPeriod } from "@/lib/period";
 //   export { isDiscountActive } from "@/lib/discount-status";
 //   export { runLifecycle } from "@/lib/subscription-lifecycle";
-import type { BillingPeriod } from "@prisma/client";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-// ---- TEMP until P2's src/lib/period.ts ----
-// Month-end safe, UTC: Jan 31 + 1 month = Feb 28/29, Feb 29 2028 + 1 year = Feb 28 2029.
-function addMonths(d: Date, n: number): Date {
-  const y = d.getUTCFullYear();
-  const m = d.getUTCMonth() + n;
-  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-  return new Date(
-    Date.UTC(y, m, Math.min(d.getUTCDate(), lastDay), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds()),
-  );
-}
-
-export function addPeriod(date: Date, period: BillingPeriod, n = 1): Date {
-  switch (period) {
-    case "DAILY":
-      return new Date(date.getTime() + n * DAY_MS);
-    case "WEEKLY":
-      return new Date(date.getTime() + 7 * n * DAY_MS);
-    case "MONTHLY":
-      return addMonths(date, n);
-    case "YEARLY":
-      return addMonths(date, 12 * n);
-  }
-}
+export { addPeriod } from "@/lib/period";
 
 // ---- TEMP until P2's src/lib/discount-status.ts ----
 // ACTIVE = started, not ended, and not used up.
