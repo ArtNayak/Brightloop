@@ -1,4 +1,4 @@
-// HTTP check of the invoice API: role matrix with the real seeded logins, status codes, JSON error shape and
+// HTTP check of the invoice API and the /invoices/[id] page: role matrix with the real seeded logins, status codes, JSON error shape and
 // "no secrets in any response". Run: npm run check:invoice-http
 // Needs: a seeded local database AND the app running (npm run dev, or build + start) at BASE_URL (default
 // http://localhost:3000) using that same database. Fixture rows are prefixed INV-TESTHTTP / TEST-HTTP / test-http-
@@ -150,6 +150,41 @@ async function main() {
       assert.equal(one.status, 200);
       assert.equal(one.json?.number, "INV-TESTHTTP-1");
     }
+  });
+
+  // ---------------- the /invoices/[id] page ----------------
+  const page = (cookie: string | null, id: string) => call(cookie, "GET", `/invoices/${id}`);
+  await check("page: anonymous goes to login, CUSTOMER is sent to the portal, neither sees invoice data", async () => {
+    const anon = await page(null, guard.id);
+    assert.equal(anon.status, 307);
+    assert.ok(!anon.text.includes("INV-TESTHTTP"));
+    const c = await fetch(`${BASE}/invoices/${guard.id}`, { redirect: "manual", headers: { cookie: cust } });
+    assert.equal(c.status, 307);
+    assert.ok(new URL(c.headers.get("location") ?? "", BASE).pathname.startsWith("/portal"), `redirected to ${c.headers.get("location")}`);
+    assert.ok(!(await c.text()).includes("INV-TESTHTTP"));
+  });
+  await check("page: STAFF and ADMIN see the invoice; unknown id is a 404", async () => {
+    for (const who of [staff, admin]) {
+      const r = await page(who, guard.id);
+      assert.equal(r.status, 200);
+      for (const s of ["INV-TESTHTTP-1", "Http TestCustomer", "1,180.00", "Draft"]) assert.ok(r.text.includes(s), `missing "${s}"`);
+    }
+    assert.equal((await page(staff, "does-not-exist")).status, 404);
+  });
+  await check("page: buttons match the status (DRAFT confirm/cancel, CONFIRMED send/cancel, with payments no cancel, PAID send, CANCELLED none)", async () => {
+    const has = async (id: string) => {
+      const t = (await page(staff, id)).text;
+      return { confirm: t.includes("Confirm invoice"), send: t.includes("Send to customer"), cancel: t.includes("Cancel invoice") };
+    };
+    assert.deepEqual(await has((await mk("DRAFT")).id), { confirm: true, send: false, cancel: true });
+    assert.deepEqual(await has((await mk("CONFIRMED")).id), { confirm: false, send: true, cancel: true });
+    assert.deepEqual(await has((await mk("CONFIRMED", [100])).id), { confirm: false, send: true, cancel: false });
+    assert.deepEqual(await has((await mk("PAID", [1180])).id), { confirm: false, send: true, cancel: false });
+    assert.deepEqual(await has((await mk("CANCELLED")).id), { confirm: false, send: false, cancel: false });
+  });
+  await check("page: never contains password hashes or reset tokens", async () => {
+    const t = (await page(staff, guard.id)).text;
+    assert.ok(!/passwordHash|resetToken|resetExpires|\$2[aby]\$/.test(t));
   });
 
   // ---------------- behaviour over HTTP ----------------
