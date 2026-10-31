@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { base, login } from "@/lib/check-helpers";
 import { outstanding, overdueWhere } from "@/lib/finance";
-import { amountOwed, monthlyRevenue } from "@/lib/finance-totals";
+import { amountOwed, monthlyRecurring, monthlyRevenue } from "@/lib/finance-totals";
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const sum = (xs: Prisma.Decimal[]) => xs.reduce((a, b) => a.plus(b), D(0));
@@ -70,6 +70,30 @@ async function main() {
 
   const all = (await page("?from=2000-01-01&to=2100-01-01")).html;
   assert.equal(card(all, "active"), String(await db.subscription.count({ where: { status: "ACTIVE", paused: false } })));
+  // MRR worked out in plain JS from the rows, independently of the SQL: weekly x 52/12, yearly / 12, daily x 365/12
+  const perMonth = { DAILY: 365 / 12, WEEKLY: 52 / 12, MONTHLY: 1, YEARLY: 1 / 12 };
+  const live = await db.subscription.findMany({ where: { status: "ACTIVE", paused: false }, include: { lines: true, plan: true } });
+  const mrr = live.reduce((t, s) => t + s.lines.reduce((x, l) => x + Number(l.amount), 0) * perMonth[s.plan.period], 0);
+  assert.equal(card(all, "mrr"), mrr.toFixed(2), "MRR matches a plain recount of active, unpaused subscriptions");
+  // the period maths, with exact numbers: a yearly line of 1200.00 adds 100.00 a month, a weekly line of 12.00 adds 52.00
+  const mrrBefore = await monthlyRecurring();
+  const owner = await db.user.findUniqueOrThrow({ where: { email: "customer@brightloop.test" } });
+  const prod = await db.product.findFirstOrThrow();
+  const tmp: string[] = [];
+  try {
+    for (const [period, price, no] of [["YEARLY", 1200, "SUB-MRRCHK-Y"], ["WEEKLY", 12, "SUB-MRRCHK-W"]] as const) {
+      const plan = await db.plan.create({ data: { name: `MRRCHK ${period}`, price, period, startDate: new Date() } });
+      const sub = await db.subscription.create({ data: { number: no, customerId: owner.id, planId: plan.id, status: "ACTIVE", startDate: new Date(), lines: { create: [{ productId: prod.id, quantity: 1, unitPrice: price, amount: price }] } } });
+      tmp.push(sub.id, plan.id);
+    }
+    assert.equal((await monthlyRecurring()).minus(mrrBefore).toFixed(2), "152.00", "yearly 1200 -> 100, weekly 12 -> 52");
+    await db.subscription.updateMany({ where: { number: "SUB-MRRCHK-W" }, data: { paused: true } });
+    assert.equal((await monthlyRecurring()).minus(mrrBefore).toFixed(2), "100.00", "a paused subscription stops counting");
+  } finally {
+    await db.subscription.deleteMany({ where: { number: { startsWith: "SUB-MRRCHK" } } });
+    await db.plan.deleteMany({ where: { name: { startsWith: "MRRCHK" } } });
+  }
+  assert.equal(card(await page("?plan=nonsense").then((r) => r.html), "mrr"), "0.00", "MRR respects the plan filter");
   assert.equal(card(all, "revenue"), (await db.payment.aggregate({ _sum: { amount: true } }))._sum.amount!.toFixed(2), "revenue over all time");
   assert.equal(card(all, "owed"), sum(open.map(outstanding)).toFixed(2));
   assert.equal(card(all, "overdue"), sum(late.map(outstanding)).toFixed(2));

@@ -15,7 +15,7 @@ export default function RevenueChart({ data }: { data: { month: string; revenue:
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} tickFormatter={label} />
           <YAxis fontSize={11} width={56} tickLine={false} axisLine={false} tickCount={4} />
-          <Tooltip cursor={{ fill: "var(--muted)" }} formatter={(v) => Number(v).toFixed(2)} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+          <Tooltip cursor={{ fill: "var(--muted)" }} formatter={(v) => Number(v).toFixed(2)} contentStyle={{ borderRadius: 8, fontSize: 12, background: "var(--popover)", color: "var(--popover-foreground)", border: "1px solid var(--border)" }} />
           <Bar dataKey="revenue" radius={[3, 3, 0, 0]} isAnimationActive={false}>
             {data.map((d, i) => (
               <Cell key={d.month} fill={i === data.length - 1 ? "var(--chart-1)" : "var(--chart-2)"} />

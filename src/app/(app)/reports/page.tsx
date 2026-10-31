@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { daysOverdue, outstanding, overdueWhere } from "@/lib/finance";
-import { amountOwed, monthlyRevenue } from "@/lib/finance-totals";
+import { amountOwed, monthlyRecurring, monthlyRevenue } from "@/lib/finance-totals";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,11 +54,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const overdue: Prisma.InvoiceWhereInput = { ...overdueWhere(), ...invScope };
 
   // Every query is independent, so they all run at the same time. Cards use counts/sums, never loaded rows.
-  const [plans, active, paused, byStatus, revenue, openInvoices, owed, overdueCount, overdueOwed, months, topOverdue, lastPayments] =
+  const [plans, active, paused, mrr, byStatus, revenue, openInvoices, owed, overdueCount, overdueOwed, months, topOverdue, lastPayments] =
     await Promise.all([
       db.plan.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
       db.subscription.count({ where: { ...subScope, status: "ACTIVE", paused: false } }),
       db.subscription.count({ where: { ...subScope, status: "ACTIVE", paused: true } }),
+      monthlyRecurring({ planId, customerQ: q || undefined }),
       db.subscription.groupBy({ by: ["status"], where: subScope, _count: true }),
       db.payment.aggregate({ where: { paidAt: { gte: from, lte: toEnd }, invoice: invScope }, _sum: { amount: true } }),
       db.invoice.count({ where: { ...invScope, status: "CONFIRMED" } }),
@@ -94,8 +95,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
       {/* gap-px on a border-coloured grid draws the hairlines between figures, however the grid wraps */}
       <div {...rise(0)}>
-        <div className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2 lg:grid-cols-5 sm:[&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
           <Kpi id="active" title="Active subscriptions" value={active} sub={`${paused} paused`} />
+          <Kpi id="mrr" title="Monthly recurring revenue" value={money(mrr)} sub="active subscriptions, before tax" />
           <Kpi id="revenue" title="Revenue collected" value={money(revenue._sum.amount)} sub={`${day(from)} to ${day(to)}`} />
           <Kpi id="owed" title="Outstanding (still owed)" value={money(owed)} sub={`${openInvoices} open invoices`} />
           <Kpi id="overdue" title="Overdue" value={money(overdueOwed)} sub={`${overdueCount} invoices`} bad={overdueOwed.gt(0)} />

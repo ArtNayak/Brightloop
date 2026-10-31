@@ -24,7 +24,7 @@ export default function ForgotPassword() {
     <main className="mx-auto mt-24 max-w-sm space-y-4 rounded bg-card p-6 shadow">
       <h1 className="text-xl font-semibold">Forgot your password?</h1>
       {message ? (
-        <p className="text-sm text-green-700">{message}</p>
+        <p className="text-sm text-green-700 dark:text-green-400">{message}</p>
       ) : (
         <form onSubmit={submit} className="space-y-3">
           <p className="text-sm text-muted-foreground">Enter your email and we&apos;ll send you a link to reset it.</p>

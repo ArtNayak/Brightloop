@@ -21,7 +21,7 @@ export default function ResetForm({ token }: { token: string }) {
 
   if (done) {
     return (
-      <p className="text-sm text-green-700">
+      <p className="text-sm text-green-700 dark:text-green-400">
         Password changed. <Link href="/login" className="underline">Sign in</Link> with your new password.
       </p>
     );
