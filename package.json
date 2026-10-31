@@ -15,6 +15,7 @@
     "check:taxes": "tsx scripts/check-taxes.ts",
     "check:products": "tsx scripts/check-products.ts",
     "check:plans": "tsx scripts/check-plans.ts",
+    "check:discounts": "tsx scripts/check-discounts.ts",
     "check:period": "tsx scripts/check-period.ts",
     "test:subscriptions": "tsx --env-file=.env src/lib/subscription-state.check.ts",
     "test:subscription-input": "tsx --env-file=.env src/lib/subscriptions.check.ts",
