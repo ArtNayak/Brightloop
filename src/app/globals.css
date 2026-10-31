@@ -47,7 +47,8 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
+:root,
+.light {
     --background: oklch(0.985 0.003 85);
     --foreground: oklch(0.21 0.01 85);
     --card: oklch(1 0 0);
@@ -80,6 +81,10 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+}
+
+.light {
+    color-scheme: light;
 }
 
 .dark {
@@ -118,6 +123,12 @@
 }
 
 @layer base {
+  /* The list of a native dropdown takes its colours from its options. Many selects are transparent so they blend into
+     the page, which left the list white in dark mode. Giving every option the popup colours fixes all dropdowns. */
+  option {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
   * {
     @apply border-border outline-ring/50;
     }
