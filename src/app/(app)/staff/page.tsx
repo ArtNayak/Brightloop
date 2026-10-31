@@ -19,7 +19,7 @@ export default async function StaffPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Staff</h1>
+      <h1 className="text-xl font-semibold">Staff</h1>
       <StaffForm />
       <Table>
         <TableHeader>

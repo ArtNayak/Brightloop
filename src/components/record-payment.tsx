@@ -62,7 +62,7 @@ export function RecordPaymentDialog({ invoiceId, outstanding }: { invoiceId: str
               <Label htmlFor="note">Note (optional)</Label>
               <Input id="note" name="note" maxLength={500} />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit">Save payment</Button>
           </form>
         </DialogContent>

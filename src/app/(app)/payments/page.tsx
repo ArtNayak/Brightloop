@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { daysOverdue, outstanding, overdueWhere } from "@/lib/finance";
+import { amountOwed } from "@/lib/finance-totals";
 import { RecordPaymentDialog } from "@/components/record-payment";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,16 +72,16 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
       <Table>
         <TableHeader>
           <TableRow>
-            {["Invoice", "Customer", "Method", "Amount", "Date", "Note", "Recorded by"].map((h) => <TableHead key={h}>{h}</TableHead>)}
+            {["Invoice", "Customer", "Method", "Amount", "Date", "Note", "Recorded by"].map((h) => <TableHead key={h} className={h === "Amount" ? "text-right" : ""}>{h}</TableHead>)}
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((p) => (
             <TableRow key={p.id}>
-              <TableCell><Link className="underline" href={`/invoices/${p.invoiceId}`}>{p.invoice.number}</Link></TableCell>
+              <TableCell><Link className="underline underline-offset-2" href={`/invoices/${p.invoiceId}`}>{p.invoice.number}</Link></TableCell>
               <TableCell>{p.invoice.customer.name}</TableCell>
               <TableCell>{p.method.replace("_", " ")}</TableCell>
-              <TableCell>{p.amount.toFixed(2)}</TableCell>
+              <TableCell className="text-right">{p.amount.toFixed(2)}</TableCell>
               <TableCell>{day(p.paidAt)}</TableCell>
               <TableCell>{p.note}</TableCell>
               <TableCell>{p.recordedBy.name}</TableCell>
@@ -106,19 +107,15 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
     total = count;
 
     if (tab === "overdue") {
-      // Total still owed across ALL overdue invoices (not only this page): what was billed minus what was paid.
-      const [billed, paid] = await Promise.all([
-        db.invoice.aggregate({ where, _sum: { total: true } }),
-        db.payment.aggregate({ where: { invoice: where }, _sum: { amount: true } }),
-      ]);
-      overdueTotal = (billed._sum.total ?? new Prisma.Decimal(0)).minus(paid._sum.amount ?? 0);
+      // Total still owed across ALL overdue invoices (not only this page).
+      overdueTotal = await amountOwed(where);
     }
 
     content = (
       <Table>
         <TableHeader>
           <TableRow>
-            {["Invoice", "Customer", "Due date", "Total", "Paid", "Outstanding", "Overdue", ""].map((h, i) => <TableHead key={i}>{h}</TableHead>)}
+            {["Invoice", "Customer", "Due date", "Total", "Paid", "Outstanding", "Overdue", ""].map((h, i) => <TableHead key={i} className={i >= 3 && i <= 5 ? "text-right" : ""}>{h}</TableHead>)}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -127,12 +124,12 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
             const late = inv.status === "CONFIRMED" ? daysOverdue(inv.dueDate) : 0;
             return (
               <TableRow key={inv.id}>
-                <TableCell><Link className="underline" href={`/invoices/${inv.id}`}>{inv.number}</Link></TableCell>
+                <TableCell><Link className="underline underline-offset-2" href={`/invoices/${inv.id}`}>{inv.number}</Link></TableCell>
                 <TableCell>{inv.customer.name}</TableCell>
                 <TableCell>{day(inv.dueDate)}</TableCell>
-                <TableCell>{inv.total.toFixed(2)}</TableCell>
-                <TableCell>{inv.total.minus(owed).toFixed(2)}</TableCell>
-                <TableCell>{owed.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{inv.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{inv.total.minus(owed).toFixed(2)}</TableCell>
+                <TableCell className="text-right">{owed.toFixed(2)}</TableCell>
                 <TableCell>{late > 0 && <Badge variant="destructive">{late} {late === 1 ? "day" : "days"} overdue</Badge>}</TableCell>
                 <TableCell>{inv.status === "CONFIRMED" && <RecordPaymentDialog invoiceId={inv.id} outstanding={owed.toFixed(2)} />}</TableCell>
               </TableRow>
@@ -147,18 +144,18 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Payments</h1>
+      <h1 className="text-xl font-semibold">Payments</h1>
 
-      <nav className="flex gap-2 border-b pb-2">
+      <nav className="flex gap-5 border-b">
         {TABS.map((t) => (
           <Link key={t.key} href={`/payments?tab=${t.key}`}
-            className={`rounded px-3 py-1 text-sm ${t.key === tab ? "bg-black text-white" : "hover:bg-gray-100"}`}>
+            className={`-mb-px border-b-2 pb-2 text-sm transition-colors ${t.key === tab ? "border-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
             {t.label}
           </Link>
         ))}
       </nav>
 
-      {overdueTotal && <p className="text-lg">Total overdue: <strong className="text-red-600">{overdueTotal.toFixed(2)}</strong></p>}
+      {overdueTotal && <p className="text-sm text-muted-foreground">Total overdue: <strong className="text-lg font-semibold tabular-nums text-destructive">{overdueTotal.toFixed(2)}</strong></p>}
 
       {/* Plain GET form: submitting just reloads this page with the filters in the URL. */}
       <form className="flex flex-wrap items-end gap-2" action="/payments">
@@ -166,24 +163,24 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
         <Input name="q" defaultValue={q} placeholder="Search customer" className="w-48" />
         {tab === "all" && (
           <>
-            <select name="method" defaultValue={method ?? ""} className="h-8 rounded-lg border bg-transparent px-2 text-sm">
+            <select name="method" defaultValue={method ?? ""} className="h-8 rounded-lg border bg-card px-2 text-sm">
               <option value="">All methods</option>
               {METHODS.map((m) => <option key={m} value={m}>{m.replace("_", " ")}</option>)}
             </select>
-            <label className="text-xs">From <Input type="date" name="from" defaultValue={sp.from} /></label>
-            <label className="text-xs">To <Input type="date" name="to" defaultValue={sp.to} /></label>
+            <label className="text-xs text-muted-foreground">From <Input type="date" name="from" defaultValue={sp.from} /></label>
+            <label className="text-xs text-muted-foreground">To <Input type="date" name="to" defaultValue={sp.to} /></label>
           </>
         )}
         <Button type="submit" size="sm">Filter</Button>
-        <Link href={`/payments?tab=${tab}`} className="text-sm underline">Clear</Link>
+        <Link href={`/payments?tab=${tab}`} className="text-sm text-muted-foreground underline">Clear</Link>
       </form>
 
-      {total === 0 ? <p className="text-sm text-gray-600">Nothing to show.</p> : content}
+      {total === 0 ? <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">Nothing to show.</p> : <div className="rounded-lg border bg-card">{content}</div>}
 
-      <div className="flex items-center gap-3 text-sm">
-        {page > 1 && <Link className="underline" href={href({ page: String(page - 1) })}>Previous</Link>}
+      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        {page > 1 && <Link className="underline underline-offset-2" href={href({ page: String(page - 1) })}>Previous</Link>}
         <span>Page {page} of {pages} ({total} total)</span>
-        {page < pages && <Link className="underline" href={href({ page: String(page + 1) })}>Next</Link>}
+        {page < pages && <Link className="underline underline-offset-2" href={href({ page: String(page + 1) })}>Next</Link>}
       </div>
     </div>
   );
