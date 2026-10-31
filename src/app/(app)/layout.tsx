@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { navItems } from "@/lib/nav-items";
 import NavLink from "@/components/nav-link";
 import SignOut from "@/components/sign-out";
+import ThemeToggle from "@/components/theme-toggle";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -34,6 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <p className="truncate text-foreground">{session.user.email}</p>
           <p>{session.user.role.toLowerCase()}</p>
           <SignOut />
+          <ThemeToggle />
         </div>
       </aside>
       {/* Content eases in on every page: fade + 4px rise, CSS only (no animation library). */}

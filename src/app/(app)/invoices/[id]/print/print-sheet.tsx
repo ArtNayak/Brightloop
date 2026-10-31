@@ -6,7 +6,7 @@ import InvoiceView from "@/components/invoice-view";
 // printed. Plain props, no data fetching and no buttons, so it can be rendered in a check.
 export default function PrintSheet({ invoice, printedOn }: { invoice: InvoiceDetail; printedOn: string }) {
   return (
-    <article className="print-sheet mx-auto max-w-3xl space-y-6 rounded-lg border bg-white p-8">
+    <article className="print-sheet mx-auto max-w-3xl space-y-6 rounded-lg border bg-white p-8 text-black">
       <header className="flex items-end justify-between border-b pb-4">
         <p className="text-xl font-bold">Brightloop</p>
         <p className="text-sm uppercase tracking-wide text-gray-600">Invoice</p>
