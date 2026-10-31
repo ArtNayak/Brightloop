@@ -21,16 +21,16 @@ export default function ForgotPassword() {
   }
 
   return (
-    <main className="mx-auto mt-24 max-w-sm space-y-4 rounded bg-white p-6 shadow">
+    <main className="mx-auto mt-24 max-w-sm space-y-4 rounded bg-card p-6 shadow">
       <h1 className="text-xl font-semibold">Forgot your password?</h1>
       {message ? (
         <p className="text-sm text-green-700">{message}</p>
       ) : (
         <form onSubmit={submit} className="space-y-3">
-          <p className="text-sm text-gray-600">Enter your email and we&apos;ll send you a link to reset it.</p>
+          <p className="text-sm text-muted-foreground">Enter your email and we&apos;ll send you a link to reset it.</p>
           <input name="email" type="email" placeholder="Email" required className="w-full rounded border p-2" />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button className="w-full rounded bg-black p-2 text-white">Send reset link</button>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <button className="w-full rounded bg-primary p-2 text-primary-foreground">Send reset link</button>
         </form>
       )}
       <p className="text-sm">

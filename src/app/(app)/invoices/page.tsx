@@ -46,7 +46,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
             key={t.key}
             href={invoiceListHref({ ...keep, ...t.params })}
             aria-current={tab === t.key ? "page" : undefined}
-            className={`rounded-full px-3 py-1 text-sm ${tab === t.key ? "bg-gray-900 text-white" : "bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-100"}`}
+            className={`rounded-full px-3 py-1 text-sm ${tab === t.key ? "bg-primary text-primary-foreground" : "bg-card text-foreground ring-1 ring-border hover:bg-muted"}`}
           >
             {t.label}
           </Link>
@@ -58,15 +58,15 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
         {query.overdue && <input type="hidden" name="overdue" value={query.overdue} />}
         {query.customerId && <input type="hidden" name="customerId" value={query.customerId} />}
         {query.subscriptionId && <input type="hidden" name="subscriptionId" value={query.subscriptionId} />}
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Search
           <Input name="q" defaultValue={query.q ?? ""} placeholder="Invoice number, customer name or email" className="w-72" maxLength={100} />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Issued from
           <Input name="from" type="date" defaultValue={query.from ?? ""} />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           to
           <Input name="to" type="date" defaultValue={query.to ?? ""} />
         </label>
@@ -74,24 +74,24 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
           Apply
         </Button>
         {hasFilters && (
-          <Link href={invoiceListHref({ status: query.status, overdue: query.overdue, customerId: query.customerId, subscriptionId: query.subscriptionId })} className="pb-1.5 text-sm text-gray-600 hover:underline">
+          <Link href={invoiceListHref({ status: query.status, overdue: query.overdue, customerId: query.customerId, subscriptionId: query.subscriptionId })} className="pb-1.5 text-sm text-muted-foreground hover:underline">
             Clear
           </Link>
         )}
       </form>
 
       {scoped && (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Showing the invoices of one {query.subscriptionId ? "subscription" : "customer"}.{" "}
           <Link href={invoiceListHref({ status: query.status, overdue: query.overdue, q: query.q, from: query.from, to: query.to })} className="underline">
             Show all
           </Link>
         </p>
       )}
-      {problem && <p className="text-sm text-red-600">That filter was ignored ({problem}).</p>}
+      {problem && <p className="text-sm text-destructive">That filter was ignored ({problem}).</p>}
 
       {items.length === 0 ? (
-        <div className="rounded-lg border bg-white p-8 text-center text-sm text-gray-600">
+        <div className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">
           {total > 0 ? (
             <>
               There is no page {page}.{" "}
@@ -109,7 +109,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
         <InvoiceTable items={items} />
       )}
 
-      <div className="flex items-center justify-between text-sm text-gray-600">
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>
           {total} invoice{total === 1 ? "" : "s"} &middot; page {Math.min(page, totalPages)} of {totalPages}
         </span>
@@ -119,14 +119,14 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
               Previous
             </Link>
           ) : (
-            <span className="text-gray-400">Previous</span>
+            <span className="text-muted-foreground">Previous</span>
           )}
           {page < totalPages ? (
             <Link href={invoiceListHref({ ...here, page: page + 1 })} rel="next" className="underline">
               Next
             </Link>
           ) : (
-            <span className="text-gray-400">Next</span>
+            <span className="text-muted-foreground">Next</span>
           )}
         </span>
       </div>

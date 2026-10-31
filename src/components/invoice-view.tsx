@@ -26,29 +26,29 @@ export default function InvoiceView({ invoice: inv }: { invoice: InvoiceDetail }
             <h1 className="text-2xl font-semibold">{inv.number}</h1>
             <InvoiceStatusBadge status={inv.status} overdue={inv.overdue} />
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             {inv.customer.name} &middot; {inv.customer.email}
           </p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Subscription {inv.subscription.number} &middot; Terms: {termsLabel(inv.subscription.paymentTerms)}
           </p>
         </div>
         <dl className="grid grid-cols-[auto_auto] gap-x-6 gap-y-1 text-sm">
-          <dt className="text-gray-600">Billing period</dt>
+          <dt className="text-muted-foreground">Billing period</dt>
           <dd>
             {formatDate(inv.periodStart)} to {formatDate(inv.periodEnd)}
           </dd>
-          <dt className="text-gray-600">Issued</dt>
+          <dt className="text-muted-foreground">Issued</dt>
           <dd>{formatDate(inv.issueDate)}</dd>
-          <dt className="text-gray-600">Due</dt>
-          <dd className={inv.overdue ? "font-medium text-red-600" : undefined}>
+          <dt className="text-muted-foreground">Due</dt>
+          <dd className={inv.overdue ? "font-medium text-destructive" : undefined}>
             {formatDate(inv.dueDate)}
             {inv.overdue && ` (${inv.daysOverdue} day${inv.daysOverdue === 1 ? "" : "s"} overdue)`}
           </dd>
         </dl>
       </div>
 
-      <div className="rounded-lg border bg-white">
+      <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -76,15 +76,15 @@ export default function InvoiceView({ invoice: inv }: { invoice: InvoiceDetail }
       </div>
 
       <dl className="ml-auto grid max-w-xs grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-sm">
-        <dt className="text-gray-600">Subtotal</dt>
+        <dt className="text-muted-foreground">Subtotal</dt>
         <dd className={num}>{formatMoney(inv.subtotal)}</dd>
-        <dt className="text-gray-600">Discount</dt>
+        <dt className="text-muted-foreground">Discount</dt>
         <dd className={num}>{inv.discountTotal === "0.00" ? "-" : `-${formatMoney(inv.discountTotal)}`}</dd>
-        <dt className="text-gray-600">Tax</dt>
+        <dt className="text-muted-foreground">Tax</dt>
         <dd className={num}>{formatMoney(inv.taxTotal)}</dd>
         <dt className="border-t pt-1 font-semibold">Total</dt>
         <dd className={`${num} border-t pt-1 font-semibold`}>{formatMoney(inv.total)}</dd>
-        <dt className="text-gray-600">Paid</dt>
+        <dt className="text-muted-foreground">Paid</dt>
         <dd className={num}>{formatMoney(inv.paid)}</dd>
         <dt className="font-semibold">Amount due</dt>
         <dd className={`${num} font-semibold`}>{formatMoney(inv.status === "CANCELLED" ? "0.00" : inv.outstanding)}</dd>
@@ -93,9 +93,9 @@ export default function InvoiceView({ invoice: inv }: { invoice: InvoiceDetail }
       <section className="space-y-2">
         <h2 className="text-sm font-medium">Payments</h2>
         {inv.payments.length === 0 ? (
-          <p className="text-sm text-gray-600">No payments recorded yet.</p>
+          <p className="text-sm text-muted-foreground">No payments recorded yet.</p>
         ) : (
-          <div className="rounded-lg border bg-white">
+          <div className="rounded-lg border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

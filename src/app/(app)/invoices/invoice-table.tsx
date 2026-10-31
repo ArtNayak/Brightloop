@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default function InvoiceTable({ items }: { items: InvoiceListItem[] }) {
   const num = "text-right tabular-nums";
   return (
-    <div className="rounded-lg border bg-white">
+    <div className="rounded-lg border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -28,16 +28,16 @@ export default function InvoiceTable({ items }: { items: InvoiceListItem[] }) {
                 <Link href={`/invoices/${i.id}`} className="font-medium hover:underline">
                   {i.number}
                 </Link>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-muted-foreground">
                   {i.subscription.number} &middot; {formatDate(i.periodStart)} to {formatDate(i.periodEnd)}
                 </div>
               </TableCell>
               <TableCell>
                 {i.customer.name}
-                <div className="text-xs text-gray-500">{i.customer.email}</div>
+                <div className="text-xs text-muted-foreground">{i.customer.email}</div>
               </TableCell>
               <TableCell>{formatDate(i.issueDate)}</TableCell>
-              <TableCell className={i.overdue ? "font-medium text-red-600" : undefined}>
+              <TableCell className={i.overdue ? "font-medium text-destructive" : undefined}>
                 {formatDate(i.dueDate)}
                 {i.overdue && <div className="text-xs">{i.daysOverdue} day{i.daysOverdue === 1 ? "" : "s"} overdue</div>}
               </TableCell>

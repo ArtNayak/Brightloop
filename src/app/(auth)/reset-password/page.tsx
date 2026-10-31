@@ -7,12 +7,12 @@ export default async function ResetPassword({ searchParams }: { searchParams: Pr
   const { token } = await searchParams;
 
   return (
-    <main className="mx-auto mt-24 max-w-sm space-y-4 rounded bg-white p-6 shadow">
+    <main className="mx-auto mt-24 max-w-sm space-y-4 rounded bg-card p-6 shadow">
       <h1 className="text-xl font-semibold">Choose a new password</h1>
       {token ? (
         <ResetForm token={token} />
       ) : (
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-destructive">
           This link is missing its token. <Link href="/forgot-password" className="underline">Request a new one</Link>.
         </p>
       )}
