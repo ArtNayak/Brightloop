@@ -8,6 +8,8 @@
     "typecheck": "tsc --noEmit",
     "check:billing": "tsx scripts/check-billing.ts",
     "check:billing-run": "tsx scripts/check-billing-run.ts",
+    "check:route-guards": "tsx scripts/check-route-guards.ts",
+    "check:billing-seed": "tsx scripts/check-billing-seed.ts",
     "check:invoice-view": "tsx scripts/check-invoice-view.ts",
     "check:invoices": "tsx scripts/check-invoices.ts",
     "check:invoice-http": "tsx scripts/check-invoice-http.ts",

@@ -6,8 +6,9 @@ import { describeBillingRun } from "@/lib/billing/invoice-ui";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-// "Run billing" on /invoices. Opening it asks the server how many subscriptions are due (GET), nothing is billed until
-// "Run billing now" (POST). Running twice is safe: a period that already has an invoice is never billed again.
+// "Run billing" on /invoices. Opening it asks the server roughly how many subscriptions are due (GET). It is an estimate,
+// because the run first activates and closes subscriptions. Nothing is billed until "Run billing now" (POST).
+// Running twice is safe: a period that already has an invoice is never billed again.
 
 type Summary = { created: number; alreadyBilled: number; skipped: number; failed: { subscription: string; error: string }[] };
 
@@ -73,7 +74,13 @@ export default function RunBilling() {
           </DialogHeader>
           {error && <p className="text-sm text-red-600">{error}</p>}
           {!result && !error && (
-            <p className="text-sm">{due === null ? "Checking what is due..." : `${due} subscription${due === 1 ? " is" : "s are"} due for billing.`}</p>
+            <p className="text-sm">
+              {due === null
+                ? "Checking what is due..."
+                : due === 0
+                  ? "No subscription looks due right now. Billing also activates subscriptions that start today first, so it can still create invoices."
+                  : `About ${due} subscription${due === 1 ? " is" : "s are"} due for billing. Subscriptions starting today are activated first, and expired ones closed, which can change this.`}
+            </p>
           )}
           {result && (
             <div className="space-y-2 text-sm">
@@ -94,8 +101,8 @@ export default function RunBilling() {
               {result ? "Close" : "Cancel"}
             </Button>
             {!result && (
-              <Button disabled={running || due === null || due === 0} onClick={run}>
-                {running ? "Billing..." : due === 0 ? "Nothing is due" : "Run billing now"}
+              <Button disabled={running || due === null} onClick={run}>
+                {running ? "Billing..." : "Run billing now"}
               </Button>
             )}
           </DialogFooter>

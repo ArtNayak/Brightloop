@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { Prisma } from "@prisma/client";
 import { db } from "../src/lib/db";
-import { describeFailure, runBilling } from "../src/lib/billing/run";
+import { billableWhere, describeFailure, dueWhere, runBilling } from "../src/lib/billing/run";
 
 const host = (() => {
   try {
@@ -105,6 +105,17 @@ async function main() {
   const main = nums("001", "002", "003", "004", "005", "006", "007").number.in.map((n) => `${P}-${n}`);
   const scope = { number: { in: main } };
 
+  // Two more that are "due" by date but that the run can never bill: past its expiry, and nothing but free lines.
+  await mk("008", { planId: monthly.id, start: "2019-01-01", next: "2020-05-20", expiry: "2020-05-15", lines: [supportLine] });
+  await mk("009", { planId: monthly.id, start: "2020-04-01", next: "2020-05-01", lines: [{ productId: support.id, quantity: 1, unitPrice: 0 }] });
+  const previewScope = { number: { in: [...main, `${P}-008`, `${P}-009`] } };
+  const billableBefore = await db.subscription.count({ where: { AND: [billableWhere(NOW), previewScope] } });
+
+  await check("preview: counts only subscriptions the run can bill (not paused, without lines, past expiry or free)", async () => {
+    assert.equal(await db.subscription.count({ where: { AND: [dueWhere(NOW), previewScope] } }), 8, "8 are due by date: everything except the paused one");
+    assert.equal(billableBefore, 5, "001, 002, 005, 006 and 007 can be billed");
+  });
+
   const r1 = await runBilling(NOW, scope);
   await check("run 1 summary: 10 invoices, 1 skipped (no lines), 1 failed (bad terms)", () => {
     assert.equal(r1.created, 10);
@@ -114,6 +125,11 @@ async function main() {
     assert.equal(r1.failed[0].subscription, `${P}-007`);
     assert.match(r1.failed[0].error, /Unknown payment terms/);
   });
+  await check("preview matches reality: subscriptions billed + failed = what the preview promised", async () => {
+    const billedSubs = (await db.invoice.findMany({ where: { subscription: previewScope }, distinct: ["subscriptionId"], select: { subscriptionId: true } })).length;
+    assert.equal(billedSubs + r1.failed.length, billableBefore);
+  });
+
   await check("catch-up bills each missed period once, clamped to month end (Mar 31 -> Apr 30)", async () => {
     assert.deepEqual(periods(await invoicesOf("001")), ["2020-03-31>2020-04-30", "2020-04-30>2020-05-31", "2020-05-31>2020-06-30"]);
   });

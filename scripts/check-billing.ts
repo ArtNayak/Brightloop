@@ -187,6 +187,14 @@ test("payment terms -> due date", () => {
   assert.equal(dueDateFor(issued, "IMMEDIATE").toISOString(), issued.toISOString());
 });
 
+test("due date is a calendar day (UTC midnight), whatever time of day the billing run happens", () => {
+  const afternoon = new Date("2026-01-20T14:37:12.345Z");
+  assert.equal(dueDateFor(afternoon, "NET_15").toISOString(), "2026-02-04T00:00:00.000Z");
+  assert.equal(dueDateFor(afternoon, "IMMEDIATE").toISOString(), "2026-01-20T00:00:00.000Z");
+  const lateNight = new Date("2026-12-31T23:59:59.999Z"); // crosses a year end
+  assert.equal(dueDateFor(lateNight, "NET_30").toISOString(), "2027-01-30T00:00:00.000Z");
+});
+
 
 // ---------- invoice email ----------
 const emailInv = (over: Partial<EmailInvoice> = {}): EmailInvoice => ({
