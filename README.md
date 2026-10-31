@@ -1,6 +1,6 @@
 # Brightloop
 
-Subscription management: Next.js 14 (App Router) + TypeScript + Prisma + PostgreSQL + Tailwind.
+Subscription management: Next.js 16 (App Router) + TypeScript + Prisma + PostgreSQL + Tailwind.
 
 ## Setup
 
