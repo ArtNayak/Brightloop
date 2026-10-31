@@ -11,6 +11,7 @@
     "check:invoices": "tsx scripts/check-invoices.ts",
     "check:invoice-http": "tsx scripts/check-invoice-http.ts",
     "check:catalog-seed": "tsx scripts/check-catalog-seed.ts",
+    "check:taxes": "tsx scripts/check-taxes.ts",
     "check:period": "tsx scripts/check-period.ts",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",

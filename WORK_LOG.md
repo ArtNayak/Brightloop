@@ -21,3 +21,25 @@
 - `git diff --check` — passed.
 
 **Security/leakage review:** this change adds seed fixtures and a pure discount-status helper, with no new API route, credential handling, or user-controlled output. No schema changes were made.
+
+## Person 2 - push 3/7: tax management
+
+**Read:** Person 2 T4 and project route/security conventions. No schema changes are needed.
+
+**Plan:** add a validated Decimal-backed tax service, ADMIN-only write routes, ADMIN/STAFF read access, a read-only staff page, and a regression suite for validation and delete behavior.
+
+**Implemented:** tax list/create and update/remove APIs; `/products/taxes` page linked from Products; create/edit/activate/deactivate/remove controls for admins; usage counts and an empty/loading state. Used taxes are deactivated. Unused taxes are hard-deleted, with a foreign-key race falling back to deactivation. API error responses are generic and do not expose database messages.
+
+**Red/green evidence:** before the service existed, `npm run check:taxes` failed because `src/lib/catalog/taxes` was missing. After implementation, all nine validation, update, delete, and race-condition checks passed.
+
+**Verification:**
+
+- `npm run typecheck` - passed.
+- `npm run check:taxes` - 9/9 passed.
+- `npm run check:catalog-seed` - passed.
+- `npm run check:period` - passed.
+- `npm run check:billing` - 20/20 passed.
+- `npm run build` - passed, including `/api/taxes`, `/api/taxes/[id]`, and `/products/taxes`.
+- `git diff --check` - passed.
+
+**Security/leakage review:** GET is restricted to ADMIN/STAFF; every mutation requires ADMIN before parsing the request. Staff receives no mutation controls. Unexpected API failures return generic messages. Role behavior was reviewed in the route and page code; database-backed HTTP role tests were not run because no `DATABASE_URL` is configured.
