@@ -1,7 +1,7 @@
 // run: npx tsx src/lib/finance.check.ts
 import assert from "node:assert/strict";
 import { Prisma } from "@prisma/client";
-import { outstanding, overdueWhere } from "./finance";
+import { daysOverdue, outstanding, overdueWhere } from "./finance";
 
 const D = (v: string) => new Prisma.Decimal(v);
 
@@ -18,5 +18,13 @@ assert.equal(outstanding({ total: D("100.00"), payments: [{ amount: D("150.00") 
 const w = overdueWhere(new Date("2026-10-31T15:30:00Z"));
 assert.equal(w.status, "CONFIRMED");
 assert.equal((w.dueDate as { lt: Date }).lt.toISOString(), "2026-10-31T00:00:00.000Z");
+
+// days overdue: due today or later = 0, due yesterday = 1, due 25 days ago = 25, an afternoon due time still counts as a full day
+const now = new Date("2026-10-31T15:30:00Z");
+assert.equal(daysOverdue(new Date("2026-10-31T00:00:00Z"), now), 0);
+assert.equal(daysOverdue(new Date("2026-11-05T00:00:00Z"), now), 0);
+assert.equal(daysOverdue(new Date("2026-10-30T00:00:00Z"), now), 1);
+assert.equal(daysOverdue(new Date("2026-10-30T15:00:00Z"), now), 1);
+assert.equal(daysOverdue(new Date("2026-10-06T00:00:00Z"), now), 25);
 
 console.log("finance ok");
