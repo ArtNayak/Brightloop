@@ -20,6 +20,7 @@
     "test": "tsx src/lib/finance.check.ts && npm run test:auth",
     "test:auth": "tsx --env-file=.env src/app/api/auth/password-reset.check.ts",
     "test:staff": "tsx --env-file=.env src/app/api/staff/staff.check.ts",
+    "test:payments": "tsx --env-file=.env src/app/api/payments/payments.check.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
