@@ -1,5 +1,24 @@
 # Development record
 
+## Person 3 — push 5/7: quotation templates
+
+**Read:** project overview decisions and Person 3 T5 requirements. Kept the Prisma schema unchanged; quotation template tables and subscription-template relations were already present.
+
+**Plan:** add ADMIN/STAFF template CRUD endpoints, reusable template list/create/edit pages, product and variant validation, safe deletion behavior for templates referenced by subscriptions, and a path from each template to subscription creation. Add database-backed CRUD checks alongside implementation.
+
+**Implemented:** `/api/quotation-templates` list/create and `/api/quotation-templates/[id]` read/update/delete; `/subscriptions/templates` searchable list, `/new` and `/{id}/edit` editors, and a “Use template” link to `/subscriptions/new?templateId=...`. The subscription form preloads template lines and plan; subscription creation snapshots current catalog prices and sets quote validity from the template. Updates replace template lines transactionally without modifying subscription snapshots. Deleting a template already referenced by a subscription returns 409.
+
+**Red/green evidence:** `npm run test:quotation-templates` covers invalid name/validity/quantity, minimum plan quantity, product/variant ownership, create/update behavior, and protection of used templates. Temporarily lowering the validity minimum from one day to zero caused the check to fail on the zero-day case; the rule was restored and the test passed.
+
+**Verification:**
+
+- `npm run typecheck` — passed.
+- `npm run test:quotation-templates` — passed against the local database; fixtures are uniquely named and removed in `finally`.
+- `npm run build` — passed; both API routes and all template pages were included.
+- `git diff --check` — passed.
+
+**Security/leakage review:** all template routes and pages require ADMIN or STAFF. Inputs are schema-validated before mutation; invalid product/variant references are rejected. API errors use generic fallback text, and no credentials are returned. The database check refuses non-local databases by default. No schema changes or `AGENTS.md` changes.
+
 ## Person 2 — push 2/7: catalog seed and discount status
 
 **Read:** project overview decisions and Person 2 T2/T3 seed requirements. Kept the existing finance and billing seed calls intact, and retained the latest main branch's subscription seed after the catalog seed it depends on.
