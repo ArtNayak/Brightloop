@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { calcInvoice, type Disc, type Line } from "../src/lib/billing/calc";
 import { PAYMENT_TERMS, dueDateFor, termsDays } from "../src/lib/billing/terms";
 import { escapeHtml, invoiceEmail, type EmailInvoice } from "../src/lib/billing/invoice-email";
+import { formatDate, formatMoney, invoiceActions, termsLabel } from "../src/lib/billing/invoice-ui";
 
 const D = (v: string | number) => new Prisma.Decimal(v);
 const fx = (v: Prisma.Decimal) => v.toFixed(2);
@@ -230,6 +231,45 @@ test("invoice email: customer-controlled text is HTML-escaped (no script injecti
 
 test("invoice email: a link that is not http(s) is rejected", () => {
   assert.throws(() => invoiceEmail(emailInv(), "javascript:alert(1)"));
+});
+
+test("formatMoney groups thousands on the string and keeps the decimals", () => {
+  assert.equal(formatMoney("0.00"), "0.00");
+  assert.equal(formatMoney("999.99"), "999.99");
+  assert.equal(formatMoney("1180.00"), "1,180.00");
+  assert.equal(formatMoney("1234567.50"), "1,234,567.50");
+  assert.equal(formatMoney("-1000.00"), "-1,000.00");
+  assert.equal(formatMoney("12345678901234567890.12"), "12,345,678,901,234,567,890.12"); // no float rounding
+  assert.equal(formatMoney("n/a"), "n/a");
+});
+
+test("formatDate shows the UTC calendar day, whatever the machine's timezone", () => {
+  assert.equal(formatDate("2020-02-05T00:00:00.000Z"), "5 Feb 2020");
+  assert.equal(formatDate("2020-12-31T23:59:59.000Z"), "31 Dec 2020");
+  assert.equal(formatDate("2021-01-01T00:00:00.000Z"), "1 Jan 2021");
+  assert.equal(formatDate("garbage"), "garbage");
+});
+
+test("termsLabel: every stored payment term has a readable label", () => {
+  assert.deepEqual(PAYMENT_TERMS.map(termsLabel), ["Due on receipt", "Net 15", "Net 30", "Net 45"]);
+  assert.equal(termsLabel(null), "Due on receipt");
+  assert.equal(termsLabel("Net 15"), "Net 15");
+});
+
+test("invoiceActions: DRAFT can be confirmed or cancelled, nothing else", () => {
+  assert.deepEqual(invoiceActions({ status: "DRAFT", payments: [] }), ["confirm", "cancel"]);
+});
+
+test("invoiceActions: CONFIRMED can be sent, paid or cancelled; cancel disappears once a payment exists", () => {
+  assert.deepEqual(invoiceActions({ status: "CONFIRMED", payments: [] }), ["send", "recordPayment", "cancel"]);
+  assert.deepEqual(invoiceActions({ status: "CONFIRMED", payments: [{}] }), ["send", "recordPayment"]);
+});
+
+test("invoiceActions: PAID can only be sent, CANCELLED has no actions, and nothing offers to set PAID by hand", () => {
+  assert.deepEqual(invoiceActions({ status: "PAID", payments: [{}] }), ["send"]);
+  assert.deepEqual(invoiceActions({ status: "CANCELLED", payments: [] }), []);
+  for (const status of ["DRAFT", "CONFIRMED", "PAID", "CANCELLED"] as const)
+    assert.ok(!(invoiceActions({ status, payments: [] }) as string[]).includes("markPaid"));
 });
 
 let failed = 0;
