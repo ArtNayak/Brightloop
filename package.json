@@ -14,6 +14,7 @@
     "db:reset": "prisma db push --force-reset && prisma db seed",
     "test": "tsx src/lib/finance.check.ts && npm run test:auth",
     "test:auth": "tsx --env-file=.env src/app/api/auth/password-reset.check.ts",
+    "test:staff": "tsx --env-file=.env src/app/api/staff/staff.check.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
