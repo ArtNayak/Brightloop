@@ -18,6 +18,8 @@
     "check:products": "tsx scripts/check-products.ts",
     "check:plans": "tsx scripts/check-plans.ts",
     "check:discounts": "tsx scripts/check-discounts.ts",
+    "check:deployment": "tsx scripts/check-deployment.ts",
+    "verify:deployment": "tsx --env-file=.env.production.local scripts/verify-deployment.ts",
     "check:period": "tsx scripts/check-period.ts",
     "test:subscriptions": "tsx --env-file=.env src/lib/subscription-state.check.ts",
     "test:subscription-input": "tsx --env-file=.env src/lib/subscriptions.check.ts",
