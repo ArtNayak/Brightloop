@@ -137,9 +137,9 @@ test("table: a row shows number (linked to its page), customer, subscription, pe
 
 test("table: overdue rows are red with the days, others are not", () => {
   const h = table([row({ id: "late", overdue: true, daysOverdue: 12 }), row({ id: "ok", number: "INV-0008" })]);
-  assert.ok(h.includes("12 days overdue") && h.includes("Overdue") && h.includes("text-red-600"));
+  assert.ok(h.includes("12 days overdue") && h.includes("Overdue") && h.includes("text-destructive"));
   assert.equal(h.split("overdue").length - 1, 1); // only the late row mentions it
-  assert.ok(!table([row()]).includes("text-red-600"));
+  assert.ok(!table([row()]).includes("text-destructive"));
 });
 
 test("table: cancelled shows no outstanding amount, paid shows 0.00", () => {

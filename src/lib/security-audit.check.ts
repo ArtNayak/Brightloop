@@ -10,7 +10,7 @@ import { db } from "@/lib/db";
 import { base, login } from "@/lib/check-helpers";
 
 const apiDir = join(process.cwd(), "src", "app", "api");
-const PUBLIC = ["auth/[...nextauth]", "auth/register", "auth/forgot-password", "auth/reset-password"];
+const PUBLIC = ["auth/[...nextauth]", "auth/register", "auth/forgot-password", "auth/reset-password", "health"];
 
 function routes(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
@@ -43,12 +43,15 @@ const STAFF_ONLY: Call[] = [
   ["POST", "/api/payments", {}], ["GET", "/api/plans"], ["GET", "/api/plans/x"], ["GET", "/api/products"], ["GET", "/api/products/x"],
   ["GET", "/api/taxes"], ["GET", "/api/subscriptions"], ["POST", "/api/subscriptions", {}], ["GET", "/api/subscriptions/x"],
   ["PATCH", "/api/subscriptions/x", {}], ["GET", "/api/subscriptions/customers"],
+  ["GET", "/api/discounts"], ["GET", "/api/discounts/x"], ["GET", "/api/quotation-templates"], ["POST", "/api/quotation-templates", {}],
+  ["GET", "/api/quotation-templates/x"], ["PATCH", "/api/quotation-templates/x", {}], ["DELETE", "/api/quotation-templates/x"],
 ];
 const ADMIN_ONLY: Call[] = [
   ["POST", "/api/staff", {}], ["POST", "/api/jobs/lifecycle"], ["POST", "/api/plans", {}], ["PATCH", "/api/plans/x", {}],
   ["POST", "/api/products", {}], ["PATCH", "/api/products/x", {}], ["DELETE", "/api/products/x"], ["POST", "/api/products/x/variants", {}],
   ["PATCH", "/api/products/x/variants/y", {}], ["DELETE", "/api/products/x/variants/y"], ["POST", "/api/taxes", {}],
   ["PATCH", "/api/taxes/x", {}], ["DELETE", "/api/taxes/x"],
+  ["POST", "/api/discounts", {}], ["PATCH", "/api/discounts/x", {}], ["DELETE", "/api/discounts/x"],
 ];
 
 async function call(cookie: string, [method, path, body]: Call) {
@@ -84,7 +87,7 @@ async function checkNoSecrets(admin: string) {
   const secret = /passwordHash|resetToken|resetExpires|\$2[aby]\$\d\d\$/;
   const urls = [
     "/api/invoices", `/api/invoices/${inv.id}`, "/api/subscriptions", `/api/subscriptions/${sub.id}`, "/api/subscriptions/customers",
-    "/api/plans", "/api/products", "/api/taxes",
+    "/api/plans", "/api/products", "/api/taxes", "/api/discounts", "/api/quotation-templates",
     "/reports", "/payments", "/invoices", `/invoices/${inv.id}`, "/subscriptions", `/subscriptions/${sub.id}`, "/staff", "/products", "/plans",
   ];
   for (const u of urls) {
@@ -111,8 +114,16 @@ async function checkNoSecrets(admin: string) {
   }
 }
 
+// The health route is public on purpose (hosting monitors call it without logging in): it may only say ok / unavailable.
+async function checkHealth() {
+  const r = await call("", ["GET", "/api/health"]);
+  assert.equal(r.status, 200, "/api/health must answer signed-out callers (not redirect them to login)");
+  assert.deepEqual(JSON.parse(r.text), { status: "ok", database: "ok" }, "/api/health may expose nothing else");
+}
+
 async function main() {
   const n = checkGuards();
+  await checkHealth();
   const { admin } = await checkMatrix();
   await checkNoSecrets(admin);
   console.log(`security audit ok (${n} handlers guarded)`);

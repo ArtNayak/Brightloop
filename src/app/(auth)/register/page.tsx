@@ -21,14 +21,14 @@ export default function Register() {
   }
 
   return (
-    <main className="mx-auto mt-24 max-w-sm space-y-4 rounded bg-white p-6 shadow">
+    <main className="mx-auto mt-24 max-w-sm space-y-4 rounded bg-card p-6 shadow">
       <h1 className="text-xl font-semibold">Create your account</h1>
       <form onSubmit={submit} className="space-y-3">
         <input name="name" placeholder="Name" required className="w-full rounded border p-2" />
         <input name="email" type="email" placeholder="Email" required className="w-full rounded border p-2" />
         <input name="password" type="password" placeholder="Password" required className="w-full rounded border p-2" />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button className="w-full rounded bg-black p-2 text-white">Sign up</button>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <button className="w-full rounded bg-primary p-2 text-primary-foreground">Sign up</button>
       </form>
       <p className="text-sm">
         <Link href="/login" className="underline">Already have an account?</Link>

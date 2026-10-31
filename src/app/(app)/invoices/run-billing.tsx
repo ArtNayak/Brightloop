@@ -72,7 +72,7 @@ export default function RunBilling() {
               Creates a draft invoice for every subscription whose billing date has arrived. Subscriptions already billed for that period are left alone.
             </DialogDescription>
           </DialogHeader>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           {!result && !error && (
             <p className="text-sm">
               {due === null
@@ -86,7 +86,7 @@ export default function RunBilling() {
             <div className="space-y-2 text-sm">
               <p className="font-medium">{describeBillingRun(result)}</p>
               {result.failed.length > 0 && (
-                <ul className="list-disc space-y-1 pl-5 text-red-600">
+                <ul className="list-disc space-y-1 pl-5 text-destructive">
                   {result.failed.map((f) => (
                     <li key={f.subscription}>
                       {f.subscription}: {f.error}
