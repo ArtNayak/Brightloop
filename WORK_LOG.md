@@ -117,3 +117,29 @@
 - `git diff --check` - passed.
 
 **Security/leakage review:** discount list/detail GET require ADMIN or STAFF; POST/PATCH/DELETE require ADMIN before parsing or mutating. Staff sees read-only screens. Product and subscription targets are validated server-side. Unexpected API errors return generic messages and monetary values serialize as strings. No schema changes. HTTP role tests were not run because this checkout has no `.env` test database configured.
+
+## Person 2 - push 7/7: deployment readiness
+
+**Read:** Person 2 deployment requirements and the project’s Next.js deployment guidance. This push prepares the app and documents setup; no live Neon or Vercel credentials are configured in this checkout.
+
+**Plan:** add a production environment validator and generic database readiness probe; expose a no-cache health endpoint; add a local production verification command and deployment runbook; protect all `.env*` files while keeping `.env.example` trackable.
+
+**Implemented:** added `GET /api/health` with generic 200/503 responses that never expose driver errors, a Zod-based validator for PostgreSQL/HTTPS/auth/SMTP settings, and `npm run verify:deployment` to check connectivity, schema access and seeded admin, tax, product, plan and discount records. `DEPLOYMENT.md` documents Neon setup, Vercel variables, schema/seed commands and role-based smoke checks. Added the `check:deployment` regression suite. No production secrets or live service settings were added.
+
+**Red/green evidence:** before `src/lib/deployment.ts` existed, `npm run check:deployment` failed with a missing-module error. After implementation, it passes 4/4, including rejection of insecure/invalid configuration and a leakage check proving database errors do not appear in readiness responses.
+
+**Verification:**
+
+- `npm run check:deployment` - 4/4 passed.
+- `npm run typecheck` - passed.
+- `npm run check:plans` - 6/6 passed.
+- `npm run check:products` - 12/12 passed.
+- `npm run check:taxes` - 9/9 passed.
+- `npm run check:discounts` - 7/7 passed.
+- `npm run check:catalog-seed` - passed.
+- `npm run check:period` - passed.
+- `npm run check:billing` - 30/30 passed.
+- `npm run build` - passed; production output includes `/api/health`.
+- `git diff --check` - passed.
+
+**Deployment limitation:** `.env` and `.env.production.local` are absent and no Vercel CLI is available, so the production database verifier and live role smoke tests could not be run. The runbook records the steps for when production credentials are configured. No cloud resources were created.
