@@ -47,7 +47,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     <div className="space-y-4">
       <style>{PRINT_CSS}</style>
       <div className="no-print mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3">
-        <Link href={`/invoices/${invoice.id}`} className="text-sm text-gray-600 hover:underline">
+        <Link href={`/invoices/${invoice.id}`} className="text-sm text-muted-foreground hover:underline">
           &larr; Back to invoice
         </Link>
         <PrintButton />
