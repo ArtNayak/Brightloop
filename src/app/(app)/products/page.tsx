@@ -46,7 +46,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         <div><h1 className="text-2xl font-semibold">Products</h1><p className="text-sm text-muted-foreground">Catalog items and their sales margins.</p></div>
         <div className="flex gap-2"><Button variant="outline" render={<Link href="/products/taxes" />}>Taxes</Button>{session.user.role === "ADMIN" && <Button render={<Link href="/products/new" />}>New product</Button>}</div>
       </div>
-      <form className="grid gap-3 rounded-lg border p-4 sm:grid-cols-[minmax(12rem,1fr)_12rem_12rem_auto] sm:items-end" action="/products">
+      <form className="grid gap-3 rounded-lg border p-4 lg:grid-cols-[minmax(12rem,1fr)_12rem_12rem_auto] lg:items-end" action="/products">
         <label className="space-y-1 text-sm">Search by name<Input name="q" defaultValue={q} placeholder="Search products" /></label>
         <label className="space-y-1 text-sm">Type<select name="type" defaultValue={type} className="h-8 w-full rounded-lg border bg-transparent px-2 text-sm"><option value="">All types</option>{types.map((row) => <option key={row.type} value={row.type}>{row.type}</option>)}</select></label>
         <label className="space-y-1 text-sm">Status<select name="active" defaultValue={status} className="h-8 w-full rounded-lg border bg-transparent px-2 text-sm"><option value="all">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>

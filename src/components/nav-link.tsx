@@ -11,7 +11,7 @@ export default function NavLink({ href, children }: { href: string; children: Re
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`block rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+      className={`block shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm transition-colors ${
         active ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
       }`}
     >
