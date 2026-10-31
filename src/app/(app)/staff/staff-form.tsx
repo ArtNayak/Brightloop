@@ -24,18 +24,18 @@ export default function StaffForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded border p-4">
+    <form onSubmit={submit} className="space-y-3 rounded-lg border bg-card p-4">
       <p className="font-medium">Add a staff member</p>
       <div className="grid gap-3 sm:grid-cols-3">
         <Input name="name" placeholder="Full name" required />
         <Input name="email" type="email" placeholder="Email" required />
         <Input name="password" type="password" placeholder="Temporary password" required />
       </div>
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-muted-foreground">
         More than 8 characters, with an uppercase letter, a lowercase letter and a special character. Share it with them
         in person.
       </p>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit">Create staff account</Button>
     </form>
   );

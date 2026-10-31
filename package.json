@@ -28,6 +28,7 @@
     "test:staff": "tsx --env-file=.env src/app/api/staff/staff.check.ts",
     "test:payments": "tsx --env-file=.env src/app/api/payments/payments.check.ts",
     "test:payments-page": "tsx --env-file=.env \"src/app/(app)/payments/payments-page.check.ts\"",
+    "test:reports": "tsx --env-file=.env \"src/app/(app)/reports/reports.check.ts\"",
     "postinstall": "prisma generate"
   },
   "prisma": {
