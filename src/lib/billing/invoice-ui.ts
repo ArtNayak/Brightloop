@@ -43,3 +43,55 @@ export function invoiceActions(inv: { status: InvoiceStatus; payments: unknown[]
       return [];
   }
 }
+
+// ---------- the /invoices list ----------
+
+/** Next gives search params as string | string[] | undefined. Keep the first value and drop empty ones. */
+export function firstValues(sp: Record<string, string | string[] | undefined>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(sp)) {
+    const first = Array.isArray(v) ? v[0] : v;
+    if (first !== undefined && first !== "") out[k] = first;
+  }
+  return out;
+}
+
+/** "/invoices?status=DRAFT&page=2". Empty values and page 1 are left out so links stay short and stable. */
+export function invoiceListHref(params: Record<string, string | number | null | undefined>): string {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === "") continue;
+    if (k === "page" && Number(v) <= 1) continue;
+    qs.set(k, String(v));
+  }
+  const s = qs.toString();
+  return s ? `/invoices?${s}` : "/invoices";
+}
+
+/** The quick filters above the table. "Overdue" is a filter, not a status (it is worked out from the due date). */
+export const LIST_TABS = [
+  { key: "all", label: "All", params: {} },
+  { key: "DRAFT", label: "Draft", params: { status: "DRAFT" } },
+  { key: "CONFIRMED", label: "Confirmed", params: { status: "CONFIRMED" } },
+  { key: "overdue", label: "Overdue", params: { overdue: "1" } },
+  { key: "PAID", label: "Paid", params: { status: "PAID" } },
+  { key: "CANCELLED", label: "Cancelled", params: { status: "CANCELLED" } },
+] as const;
+
+export function activeTab(q: { status?: string; overdue?: string }): string {
+  return q.overdue ? "overdue" : (q.status ?? "all");
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** One sentence for the result of a billing run. */
+export function describeBillingRun(s: { created: number; alreadyBilled: number; skipped: number; failed: unknown[] }): string {
+  const parts = [`Created ${plural(s.created, "invoice")}.`];
+  const rest = [
+    s.alreadyBilled > 0 && `${s.alreadyBilled} already billed`,
+    s.skipped > 0 && `${s.skipped} skipped`,
+    s.failed.length > 0 && `${s.failed.length} failed`,
+  ].filter(Boolean);
+  if (rest.length) parts.push(`${rest.join(", ")}.`);
+  return parts.join(" ");
+}

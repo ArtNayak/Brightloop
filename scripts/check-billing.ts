@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { calcInvoice, type Disc, type Line } from "../src/lib/billing/calc";
 import { PAYMENT_TERMS, dueDateFor, termsDays } from "../src/lib/billing/terms";
 import { escapeHtml, invoiceEmail, type EmailInvoice } from "../src/lib/billing/invoice-email";
-import { formatDate, formatMoney, invoiceActions, termsLabel } from "../src/lib/billing/invoice-ui";
+import { LIST_TABS, activeTab, describeBillingRun, firstValues, formatDate, formatMoney, invoiceActions, invoiceListHref, termsLabel } from "../src/lib/billing/invoice-ui";
 
 const D = (v: string | number) => new Prisma.Decimal(v);
 const fx = (v: Prisma.Decimal) => v.toFixed(2);
@@ -270,6 +270,33 @@ test("invoiceActions: PAID can only be sent, CANCELLED has no actions, and nothi
   assert.deepEqual(invoiceActions({ status: "CANCELLED", payments: [] }), []);
   for (const status of ["DRAFT", "CONFIRMED", "PAID", "CANCELLED"] as const)
     assert.ok(!(invoiceActions({ status, payments: [] }) as string[]).includes("markPaid"));
+});
+
+test("firstValues keeps the first value of repeated params and drops empty ones", () => {
+  assert.deepEqual(firstValues({ status: ["DRAFT", "PAID"], q: "", from: undefined, page: "2" }), { status: "DRAFT", page: "2" });
+});
+
+test("invoiceListHref: leaves out empty values and page 1, encodes text", () => {
+  assert.equal(invoiceListHref({}), "/invoices");
+  assert.equal(invoiceListHref({ status: "DRAFT", q: "", page: 1 }), "/invoices?status=DRAFT");
+  assert.equal(invoiceListHref({ status: "DRAFT", page: 3 }), "/invoices?status=DRAFT&page=3");
+  assert.equal(invoiceListHref({ q: "a&b=c d", overdue: "1" }), "/invoices?q=a%26b%3Dc+d&overdue=1");
+  assert.equal(invoiceListHref({ status: null, page: 0 }), "/invoices");
+});
+
+test("list tabs: overdue wins over status, each tab's own params select it, links round-trip", () => {
+  assert.equal(activeTab({}), "all");
+  assert.equal(activeTab({ status: "PAID" }), "PAID");
+  assert.equal(activeTab({ overdue: "1" }), "overdue");
+  assert.equal(activeTab({ status: "CONFIRMED", overdue: "1" }), "overdue");
+  for (const t of LIST_TABS) assert.equal(activeTab(t.params as { status?: string; overdue?: string }), t.key);
+  assert.equal(invoiceListHref(LIST_TABS[3].params), "/invoices?overdue=1");
+});
+
+test("describeBillingRun: plain sentence with correct plurals", () => {
+  assert.equal(describeBillingRun({ created: 0, alreadyBilled: 0, skipped: 0, failed: [] }), "Created 0 invoices.");
+  assert.equal(describeBillingRun({ created: 1, alreadyBilled: 0, skipped: 0, failed: [] }), "Created 1 invoice.");
+  assert.equal(describeBillingRun({ created: 12, alreadyBilled: 2, skipped: 1, failed: [{}] }), "Created 12 invoices. 2 already billed, 1 skipped, 1 failed.");
 });
 
 let failed = 0;
