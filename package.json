@@ -21,6 +21,7 @@
     "check:period": "tsx scripts/check-period.ts",
     "test:subscriptions": "tsx --env-file=.env src/lib/subscription-state.check.ts",
     "test:subscription-input": "tsx --env-file=.env src/lib/subscriptions.check.ts",
+    "test:quotation-templates": "tsx --env-file=.env src/lib/quotation-templates.check.ts",
     "test:lifecycle": "tsx --env-file=.env src/lib/subscription-lifecycle.check.ts",
     "check:lifecycle-http": "tsx --env-file=.env scripts/check-lifecycle-http.ts",
     "db:push": "prisma db push",
