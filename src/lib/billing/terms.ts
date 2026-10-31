@@ -12,7 +12,8 @@ export function termsDays(terms: string | null | undefined): number {
   return DAYS[terms as PaymentTerms];
 }
 
-/** dueDate = issueDate + N days (UTC), IMMEDIATE = same day. */
+/** The due date is a calendar day: UTC midnight of (issue day + N days), whatever time the invoice was issued. IMMEDIATE = the issue day. */
 export function dueDateFor(issueDate: Date, terms: string | null | undefined): Date {
-  return new Date(issueDate.getTime() + termsDays(terms) * DAY_MS);
+  const issueDay = Date.UTC(issueDate.getUTCFullYear(), issueDate.getUTCMonth(), issueDate.getUTCDate());
+  return new Date(issueDay + termsDays(terms) * DAY_MS);
 }
