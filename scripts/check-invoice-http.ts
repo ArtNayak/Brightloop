@@ -1,4 +1,4 @@
-// HTTP check of the invoice API and the /invoices/[id] page: role matrix with the real seeded logins, status codes, JSON error shape and
+// HTTP check of the invoice API and the /invoices and /invoices/[id] pages: role matrix with the real seeded logins, status codes, JSON error shape and
 // "no secrets in any response". Run: npm run check:invoice-http
 // Needs: a seeded local database AND the app running (npm run dev, or build + start) at BASE_URL (default
 // http://localhost:3000) using that same database. Fixture rows are prefixed INV-TESTHTTP / TEST-HTTP / test-http-
@@ -18,6 +18,10 @@ if (!["localhost", "127.0.0.1", "[::1]", "::1"].includes(host) && process.env.AL
   console.error(`Refusing to run against "${host || "no DATABASE_URL"}". Use a local database (or set ALLOW_REMOTE_TEST_DB=1).`);
   process.exit(1);
 }
+
+// React puts <!-- --> between adjacent text nodes in server HTML ("page <!-- -->1<!-- --> of"); take them out before matching text.
+const plain = (r: { status: number; text: string; json: Record<string, unknown> | null }) => ({ ...r, text: r.text.replace(/<!-- -->/g, "") });
+const expectMatch = (text: string, re: RegExp, what: string) => assert.ok(re.test(text), `${what}: no match for ${re}`);
 
 const day = (s: string) => new Date(`${s}T00:00:00.000Z`);
 
@@ -153,7 +157,7 @@ async function main() {
   });
 
   // ---------------- the /invoices/[id] page ----------------
-  const page = (cookie: string | null, id: string) => call(cookie, "GET", `/invoices/${id}`);
+  const page = async (cookie: string | null, id: string) => plain(await call(cookie, "GET", `/invoices/${id}`));
   await check("page: anonymous goes to login, CUSTOMER is sent to the portal, neither sees invoice data", async () => {
     const anon = await page(null, guard.id);
     assert.equal(anon.status, 307);
@@ -171,19 +175,86 @@ async function main() {
     }
     assert.equal((await page(staff, "does-not-exist")).status, 404);
   });
-  await check("page: buttons match the status (DRAFT confirm/cancel, CONFIRMED send/cancel, with payments no cancel, PAID send, CANCELLED none)", async () => {
+  await check("page: buttons match the status (DRAFT confirm/cancel, CONFIRMED send/pay/cancel, with payments no cancel, PAID send, CANCELLED none)", async () => {
     const has = async (id: string) => {
       const t = (await page(staff, id)).text;
-      return { confirm: t.includes("Confirm invoice"), send: t.includes("Send to customer"), cancel: t.includes("Cancel invoice") };
+      return { confirm: t.includes("Confirm invoice"), send: t.includes("Send to customer"), pay: t.includes("Record payment"), cancel: t.includes("Cancel invoice") };
     };
-    assert.deepEqual(await has((await mk("DRAFT")).id), { confirm: true, send: false, cancel: true });
-    assert.deepEqual(await has((await mk("CONFIRMED")).id), { confirm: false, send: true, cancel: true });
-    assert.deepEqual(await has((await mk("CONFIRMED", [100])).id), { confirm: false, send: true, cancel: false });
-    assert.deepEqual(await has((await mk("PAID", [1180])).id), { confirm: false, send: true, cancel: false });
-    assert.deepEqual(await has((await mk("CANCELLED")).id), { confirm: false, send: false, cancel: false });
+    assert.deepEqual(await has((await mk("DRAFT")).id), { confirm: true, send: false, pay: false, cancel: true });
+    assert.deepEqual(await has((await mk("CONFIRMED")).id), { confirm: false, send: true, pay: true, cancel: true });
+    assert.deepEqual(await has((await mk("CONFIRMED", [100])).id), { confirm: false, send: true, pay: true, cancel: false });
+    assert.deepEqual(await has((await mk("PAID", [1180])).id), { confirm: false, send: true, pay: false, cancel: false });
+    assert.deepEqual(await has((await mk("CANCELLED")).id), { confirm: false, send: false, pay: false, cancel: false });
   });
   await check("page: never contains password hashes or reset tokens", async () => {
     const t = (await page(staff, guard.id)).text;
+    assert.ok(!/passwordHash|resetToken|resetExpires|\$2[aby]\$/.test(t));
+  });
+
+  // ---------------- the /invoices list page ----------------
+  const list = async (cookie: string | null, qs = "") => plain(await call(cookie, "GET", `/invoices${qs}`));
+  const mine = `customerId=${customer.id}`; // every list check is scoped to the fixture customer
+  await check("list page: anonymous goes to login, CUSTOMER is sent to the portal, neither sees invoice data", async () => {
+    const anon = await list(null);
+    assert.equal(anon.status, 307);
+    assert.ok(!anon.text.includes("INV-TESTHTTP"));
+    const c = await fetch(`${BASE}/invoices?${mine}`, { redirect: "manual", headers: { cookie: cust } });
+    assert.equal(c.status, 307);
+    assert.ok(new URL(c.headers.get("location") ?? "", BASE).pathname.startsWith("/portal"));
+    assert.ok(!(await c.text()).includes("INV-TESTHTTP"));
+  });
+  await check("list page: STAFF and ADMIN see the fixtures, the filter tabs and the Run billing / Confirm all drafts buttons", async () => {
+    for (const who of [staff, admin]) {
+      const r = await list(who, `?${mine}`);
+      assert.equal(r.status, 200);
+      for (const s of ["INV-TESTHTTP-1", "Http TestCustomer", "Run billing", "Confirm all drafts (", "Overdue", "Cancelled", "Showing the invoices of one customer"]) assert.ok(r.text.includes(s), `missing "${s}"`);
+      assert.ok(r.text.includes('href="/invoices/' + guard.id + '"'), "row does not link to its invoice page");
+    }
+  });
+  await check("list page: status tab filters, the tab is marked current, 'Show all' keeps the other filters", async () => {
+    const r = await list(staff, `?${mine}&status=CANCELLED`);
+    assert.equal(r.status, 200);
+    assert.ok(r.text.includes("Cancelled"));
+    assert.ok(!r.text.includes("INV-TESTHTTP-1<"), "a DRAFT fixture showed up under Cancelled");
+    expectMatch(r.text, /aria-current="page"[^>]*>Cancelled</, "Cancelled tab current");
+    const drafts = await list(staff, `?${mine}&status=DRAFT`);
+    assert.ok(drafts.text.includes("INV-TESTHTTP-1"));
+    expectMatch(drafts.text, /aria-current="page"[^>]*>Draft</, "Draft tab current");
+  });
+  await check("list page: overdue filter shows past-due confirmed invoices only", async () => {
+    const confirmed = await mk("CONFIRMED"); // due 2020-02-05: long overdue
+    const r = await list(staff, `?${mine}&overdue=1`);
+    assert.equal(r.status, 200);
+    assert.ok(r.text.includes(confirmed.number) && r.text.includes("overdue"));
+    assert.ok(!r.text.includes("INV-TESTHTTP-1<"), "a DRAFT showed up as overdue");
+    expectMatch(r.text, /aria-current="page"[^>]*>Overdue</, "Overdue tab current");
+  });
+  await check("list page: search by invoice number and by customer email; no match shows the empty message", async () => {
+    const byNumber = await list(staff, `?${mine}&q=INV-TESTHTTP-1`);
+    assert.ok(byNumber.text.includes("INV-TESTHTTP-1"));
+    const byEmail = await list(staff, `?q=test-http-customer%40`);
+    assert.ok(byEmail.text.includes("INV-TESTHTTP-1"));
+    const none = await list(staff, `?${mine}&q=zzz-no-such-thing`);
+    assert.equal(none.status, 200);
+    assert.ok(none.text.includes("No invoices match these filters."));
+  });
+  await check("list page: pagination links, and a page past the end says so instead of failing", async () => {
+    const p1 = await list(staff, `?${mine}&pageSize=2`);
+    expectMatch(p1.text, /page 1 of \d+/, "page counter");
+    assert.ok(p1.text.includes(`href="/invoices?customerId=${customer.id}&amp;pageSize=2&amp;page=2"`) || p1.text.includes("page=2"), "no link to page 2");
+    const far = await list(staff, `?${mine}&page=999`);
+    assert.equal(far.status, 200);
+    assert.ok(far.text.includes("There is no page 999."));
+  });
+  await check("list page: a bad filter value is ignored with a message (never an error page)", async () => {
+    for (const qs of ["?status=NOPE", "?page=abc", "?from=not-a-date", "?pageSize=100000"]) {
+      const r = await list(staff, qs);
+      assert.equal(r.status, 200, qs);
+      assert.ok(r.text.includes("That filter was ignored"), qs);
+    }
+  });
+  await check("list page: never contains password hashes or reset tokens", async () => {
+    const t = (await list(staff, `?${mine}`)).text;
     assert.ok(!/passwordHash|resetToken|resetExpires|\$2[aby]\$/.test(t));
   });
 

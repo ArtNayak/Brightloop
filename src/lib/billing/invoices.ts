@@ -154,6 +154,11 @@ export async function listInvoices(query: ListQuery, now = new Date()) {
   };
 }
 
+export type InvoiceListItem = Awaited<ReturnType<typeof listInvoices>>["items"][number];
+
+/** How many invoices are waiting to be confirmed (drives the "Confirm all drafts" button). */
+export const countDrafts = () => db.invoice.count({ where: { status: "DRAFT" } });
+
 // Explicit selects everywhere: a password hash or reset token can never end up in a response.
 const detailSelect = {
   id: true,

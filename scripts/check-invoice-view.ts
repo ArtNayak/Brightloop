@@ -1,10 +1,11 @@
-// Render check for <InvoiceView />: no database, no server. Run: npm run check:invoice-view
+// Render checks for <InvoiceView /> and the /invoices table: no database, no server. Run: npm run check:invoice-view
 // Renders the component to HTML with fake invoices and checks what a person (or the customer portal) would see.
 import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import InvoiceView from "../src/components/invoice-view";
-import type { InvoiceDetail } from "../src/lib/billing/invoices";
+import InvoiceTable from "../src/app/(app)/invoices/invoice-table";
+import type { InvoiceDetail, InvoiceListItem } from "../src/lib/billing/invoices";
 
 function inv(over: Partial<InvoiceDetail> = {}): InvoiceDetail {
   return {
@@ -103,6 +104,52 @@ test("only the documented fields are rendered: a stray password hash on a nested
   (dirty.customer as Record<string, unknown>).resetToken = "tok_secret_123";
   const h = html(dirty);
   assert.ok(!/\$2[aby]\$|tok_secret_123|passwordHash|resetToken/.test(h));
+});
+
+// ---------- the /invoices table ----------
+function row(over: Partial<InvoiceListItem> = {}): InvoiceListItem {
+  return {
+    id: "r1",
+    number: "INV-0007",
+    status: "CONFIRMED",
+    periodStart: "2020-01-01T00:00:00.000Z",
+    periodEnd: "2020-01-31T00:00:00.000Z",
+    issueDate: "2020-01-31T00:00:00.000Z",
+    dueDate: "2020-02-15T00:00:00.000Z",
+    total: "12744.00",
+    customer: { id: "c1", name: "Asha Rao", email: "asha@example.com" },
+    subscription: { id: "s1", number: "SUB-001" },
+    paid: "0.00",
+    outstanding: "12744.00",
+    overdue: false,
+    daysOverdue: 0,
+    ...over,
+  };
+}
+const table = (items: InvoiceListItem[]) => renderToStaticMarkup(createElement(InvoiceTable, { items }));
+
+test("table: a row shows number (linked to its page), customer, subscription, period, dates, money and status", () => {
+  const h = table([row()]);
+  assert.ok(h.includes('href="/invoices/r1"'));
+  for (const s of ["INV-0007", "Asha Rao", "asha@example.com", "SUB-001", "1 Jan 2020 to 31 Jan 2020", "31 Jan 2020", "15 Feb 2020", "12,744.00", "Confirmed"]) assert.ok(h.includes(s), `missing "${s}"`);
+});
+
+test("table: overdue rows are red with the days, others are not", () => {
+  const h = table([row({ id: "late", overdue: true, daysOverdue: 12 }), row({ id: "ok", number: "INV-0008" })]);
+  assert.ok(h.includes("12 days overdue") && h.includes("Overdue") && h.includes("text-red-600"));
+  assert.equal(h.split("overdue").length - 1, 1); // only the late row mentions it
+  assert.ok(!table([row()]).includes("text-red-600"));
+});
+
+test("table: cancelled shows no outstanding amount, paid shows 0.00", () => {
+  assert.match(table([row({ status: "CANCELLED" })]), /12,744\.00<\/td><td[^>]*>-<\/td>/);
+  assert.match(table([row({ status: "PAID", paid: "12744.00", outstanding: "0.00" })]), /12,744\.00<\/td><td[^>]*>0\.00<\/td>/);
+});
+
+test("table: customer names and emails are escaped, and the table is read-only (links only, no buttons or forms)", () => {
+  const h = table([row({ customer: { id: "c", name: "<script>alert(1)</script>", email: '"><img src=x onerror=1>' } })]);
+  assert.ok(!h.includes("<script") && !/<img/.test(h));
+  for (const tag of ["<button", "<form", "<input"]) assert.ok(!h.includes(tag), `found ${tag}`);
 });
 
 let failed = 0;

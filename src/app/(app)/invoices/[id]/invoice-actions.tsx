@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 // The buttons on /invoices/[id]. `actions` comes from invoiceActions(), decided on the server. Each button calls the
 // invoice API and refreshes the page; the API still refuses anything not allowed (409), and we show its message.
-// `paymentSlot` is where P1's <RecordPaymentDialog /> goes. Until it exists nothing is shown for "Record payment".
+// `paymentSlot` is P1's <RecordPaymentDialog />, shown only when invoiceActions() allows recording a payment.
 
 type Props = { id: string; number: string; actions: InvoiceAction[]; paymentSlot?: React.ReactNode };
 
