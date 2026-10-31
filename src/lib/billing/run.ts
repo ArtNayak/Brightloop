@@ -23,6 +23,20 @@ export function dueWhere(now: Date): Prisma.SubscriptionWhereInput {
   return { status: "ACTIVE", paused: false, nextBillingDate: { lte: now } };
 }
 
+/**
+ * What "Run billing" will really bill: due, and something the run can bill. A subscription with no lines, only free
+ * lines, or already past its expiry stays "due" by date forever but is skipped every time, so the preview leaves it out.
+ */
+export function billableWhere(now: Date): Prisma.SubscriptionWhereInput {
+  return {
+    AND: [
+      dueWhere(now),
+      { lines: { some: { unitPrice: { gt: 0 } } } },
+      { OR: [{ expiryDate: null }, { expiryDate: { gt: db.subscription.fields.nextBillingDate } }] },
+    ],
+  };
+}
+
 // ---------- invoice numbers (D6) ----------
 // Allocated from an in-memory counter seeded with MAX(number) so a run doesn't scan the table per invoice.
 // A rolled-back subscription gives its numbers back (no gaps); a collision with another writer re-reads the max.
