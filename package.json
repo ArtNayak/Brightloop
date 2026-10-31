@@ -10,6 +10,7 @@
     "check:billing-run": "tsx scripts/check-billing-run.ts",
     "check:invoices": "tsx scripts/check-invoices.ts",
     "check:invoice-http": "tsx scripts/check-invoice-http.ts",
+    "check:catalog-seed": "tsx scripts/check-catalog-seed.ts",
     "check:period": "tsx scripts/check-period.ts",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
