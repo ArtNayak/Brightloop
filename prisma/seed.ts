@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedFinance } from "./seed-finance";
+import { seedBilling } from "./seed-billing";
 
 const db = new PrismaClient();
 
@@ -17,6 +18,7 @@ async function main() {
   await user("staff@brightloop.test", "Staff", "STAFF");
   await user("customer@brightloop.test", "Demo Customer", "CUSTOMER");
   await seedFinance(db); // demo invoices + payments (needs the users above)
+  await seedBilling(db); // TEMP: subscriptions due for billing (SUB-T4-*)
 
   if (await db.tax.count()) return; // rest is demo data, seed once
   const gst = await db.tax.create({ data: { name: "GST 18%", ratePercent: 18 } });

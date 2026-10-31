@@ -7,6 +7,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "check:billing": "tsx scripts/check-billing.ts",
+    "check:billing-run": "tsx scripts/check-billing-run.ts",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:reset": "prisma db push --force-reset && prisma db seed",
