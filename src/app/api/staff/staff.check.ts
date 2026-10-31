@@ -2,25 +2,10 @@
 // The role guard needs a real session, so this signs in through NextAuth over HTTP instead of calling the handler directly.
 import assert from "node:assert/strict";
 import { db } from "@/lib/db";
+import { base, login } from "@/lib/check-helpers";
 
-const base = process.env.BASE_URL ?? "http://localhost:3000";
 const email = `staff-check-${Date.now()}@brightloop.test`;
 const tempPassword = "TempPassw0rd!";
-
-// Signs in with email + password and returns the session cookie, or "" if the login was refused.
-async function login(who: string, password = "Passw0rd!") {
-  const csrfRes = await fetch(`${base}/api/auth/csrf`);
-  const { csrfToken } = await csrfRes.json();
-  const jar = csrfRes.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
-  const res = await fetch(`${base}/api/auth/callback/credentials`, {
-    method: "POST",
-    redirect: "manual",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: jar },
-    body: new URLSearchParams({ csrfToken, email: who, password, json: "true" }),
-  });
-  const cookies = res.headers.getSetCookie().map((c) => c.split(";")[0]);
-  return cookies.find((c) => c.includes("session-token")) ? [jar, ...cookies].join("; ") : "";
-}
 
 const create = (cookie: string, payload: unknown) =>
   fetch(`${base}/api/staff`, { method: "POST", redirect: "manual", headers: { "Content-Type": "application/json", Cookie: cookie }, body: JSON.stringify(payload) });
