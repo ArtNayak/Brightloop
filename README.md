@@ -20,11 +20,10 @@ After every `git pull`: `npm install && npm run db:push`. If the data looks off:
 
 | # | Feature | Folders |
 |---|---|---|
-| 1 | Auth, staff creation, password reset, portal | `src/app/(auth)`, `src/app/api/auth`, `src/lib/auth.ts`, `src/app/(app)/portal` |
-| 2 | Products, variants, plans, taxes | `src/app/(app)/{products,plans}` |
-| 3 | Quote templates, subscriptions, state machine | `src/app/(app)/subscriptions` |
-| 4 | Invoices, billing run, discounts | `src/app/(app)/invoices`, `src/lib/billing` |
-| 5 | Payments, overdue, finance dashboard | `src/app/(app)/{payments,reports}` |
+| 1 | Password reset, staff creation (admin), payments, overdue tracking, finance dashboard, customer portal | `src/app/(auth)`, `src/app/api/auth`, `src/lib/auth.ts`, `src/app/(app)/{payments,reports,portal}` |
+| 2 | Products, variants, taxes, plans, discount rules (admin CRUD) | `src/app/(app)/{products,plans,discounts}` |
+| 3 | Quotation templates, subscriptions, state machine | `src/app/(app)/subscriptions` |
+| 4 | Invoices, billing run, tax calc, discount application, confirm/cancel/send/print | `src/app/(app)/invoices`, `src/lib/billing` |
 
 Put API routes next to your feature: `src/app/api/<feature>/...`. Guard them with `requireRole()` from `@/lib/rbac`.
 
