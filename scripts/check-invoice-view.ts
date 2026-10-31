@@ -1,10 +1,11 @@
-// Render checks for <InvoiceView /> and the /invoices table: no database, no server. Run: npm run check:invoice-view
+// Render checks for <InvoiceView />, the /invoices table and the print sheet: no database, no server. Run: npm run check:invoice-view
 // Renders the component to HTML with fake invoices and checks what a person (or the customer portal) would see.
 import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import InvoiceView from "../src/components/invoice-view";
 import InvoiceTable from "../src/app/(app)/invoices/invoice-table";
+import PrintSheet from "../src/app/(app)/invoices/[id]/print/print-sheet";
 import type { InvoiceDetail, InvoiceListItem } from "../src/lib/billing/invoices";
 
 function inv(over: Partial<InvoiceDetail> = {}): InvoiceDetail {
@@ -150,6 +151,25 @@ test("table: customer names and emails are escaped, and the table is read-only (
   const h = table([row({ customer: { id: "c", name: "<script>alert(1)</script>", email: '"><img src=x onerror=1>' } })]);
   assert.ok(!h.includes("<script") && !/<img/.test(h));
   for (const tag of ["<button", "<form", "<input"]) assert.ok(!h.includes(tag), `found ${tag}`);
+});
+
+// ---------- the print sheet ----------
+const sheet = (i: InvoiceDetail, printedOn = "2026-10-31T09:15:00.000Z") => renderToStaticMarkup(createElement(PrintSheet, { invoice: i, printedOn }));
+
+test("print sheet: brand header, the whole invoice, and a footer with the number and the print date", () => {
+  const h = sheet(inv());
+  for (const s of ["Brightloop", "INV-0042", "Asha Rao", "Pro plan", "Support add-on", "12,744.00", "Amount due"]) assert.ok(h.includes(s), `missing "${s}"`);
+  assert.ok(h.includes("INV-0042 &middot; Printed on 31 Oct 2026") || h.includes("INV-0042 · Printed on 31 Oct 2026"), "footer");
+  assert.ok(h.includes("print-sheet"), "print CSS hooks onto .print-sheet");
+});
+
+test("print sheet: the print date is the UTC day, even just before midnight", () => {
+  assert.ok(sheet(inv(), "2026-12-31T23:59:59.000Z").includes("Printed on 31 Dec 2026"));
+});
+
+test("print sheet: no buttons, forms or links on paper, and customer text is escaped", () => {
+  const h = sheet(inv({ customer: { id: "c", name: "<script>alert(1)</script>", email: "x@y.z" } }));
+  for (const tag of ["<button", "<form", "<input", "<a ", "<script"]) assert.ok(!h.includes(tag), `found ${tag}`);
 });
 
 let failed = 0;

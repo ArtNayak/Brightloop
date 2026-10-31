@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { InvoiceError, getInvoice } from "@/lib/billing/invoices";
 import { invoiceActions } from "@/lib/billing/invoice-ui";
 import InvoiceView from "@/components/invoice-view";
+import { buttonVariants } from "@/components/ui/button";
 import { RecordPaymentDialog } from "@/components/record-payment";
 import InvoiceActions from "./invoice-actions";
 
@@ -25,12 +26,17 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       <Link href="/invoices" className="text-sm text-gray-600 hover:underline">
         &larr; All invoices
       </Link>
-      <InvoiceActions
-        id={invoice.id}
-        number={invoice.number}
-        actions={invoiceActions(invoice)}
-        paymentSlot={<RecordPaymentDialog invoiceId={invoice.id} outstanding={invoice.outstanding} />}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <InvoiceActions
+          id={invoice.id}
+          number={invoice.number}
+          actions={invoiceActions(invoice)}
+          paymentSlot={<RecordPaymentDialog invoiceId={invoice.id} outstanding={invoice.outstanding} />}
+        />
+        <Link href={`/invoices/${invoice.id}/print`} className={buttonVariants({ variant: "outline" })}>
+          Print
+        </Link>
+      </div>
       <InvoiceView invoice={invoice} />
     </div>
   );
