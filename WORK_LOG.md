@@ -92,3 +92,28 @@
 **Security/leakage review:** plan list and detail GET routes require ADMIN or STAFF; POST and PATCH require ADMIN before parsing request data. New plan page is ADMIN-only; the detail page supplies STAFF read-only controls. Unexpected API errors return generic messages; money values serialize as strings. No schema changes. Database-backed HTTP role tests were not run because no test database is configured.
 
 **Conflict resolution:** preserved current `main`'s product test script and push 4 development record, and added the plan script and plan record alongside them.
+
+## Person 2 - push 6/7: discount rules
+
+**Read:** project overview decisions D3-D9 and Person 2 T7 requirements. Reused the existing discount schema and `discountStatus()` helper without changing billing logic or the Prisma schema.
+
+**Plan:** add red-first checks for type/value, date/scope validation, optional thresholds, target references, Decimal storage, used-rule immutability and all four status values; then add ADMIN-only mutation routes and ADMIN/STAFF read pages.
+
+**Implemented:** `/discounts` lists rules with status, use count/limit, scope target and dates, with name/status filters and pagination. `/discounts/new` and `/discounts/[id]` support fixed or percentage amounts, optional thresholds and usage limits, product targeting, one-subscription targeting or all-subscription scope. Status is computed with the shared helper. Added `GET/POST /api/discounts` and `GET/PATCH/DELETE /api/discounts/[id]`. Used rules cannot change type or scope (409), enforced in the service and locked in the UI. Added the Discounts navigation entry. No discount application logic was changed; billing continues to apply rules.
+
+**Red/green evidence:** before implementation, `npm run check:discounts` failed because `src/lib/catalog/discounts` did not exist. The completed suite passes 7/7, including scheduled/active/expired/exhausted statuses, scope targeting, date/amount validation and the used-rule conflict.
+
+**Verification:**
+
+- `npm run typecheck` - passed.
+- `npm run check:discounts` - 7/7 passed.
+- `npm run check:plans` - 6/6 passed.
+- `npm run check:products` - 12/12 passed.
+- `npm run check:taxes` - 9/9 passed.
+- `npm run check:catalog-seed` - passed.
+- `npm run check:period` - passed.
+- `npm run check:billing` - 26/26 passed.
+- `npm run build` - passed; includes discount API routes and pages.
+- `git diff --check` - passed.
+
+**Security/leakage review:** discount list/detail GET require ADMIN or STAFF; POST/PATCH/DELETE require ADMIN before parsing or mutating. Staff sees read-only screens. Product and subscription targets are validated server-side. Unexpected API errors return generic messages and monetary values serialize as strings. No schema changes. HTTP role tests were not run because this checkout has no `.env` test database configured.
