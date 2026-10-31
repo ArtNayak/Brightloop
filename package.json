@@ -9,6 +9,7 @@
     "check:billing": "tsx scripts/check-billing.ts",
     "check:billing-run": "tsx scripts/check-billing-run.ts",
     "check:period": "tsx scripts/check-period.ts",
+    "test:subscriptions": "tsx --env-file=.env src/lib/subscription-state.check.ts",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:reset": "prisma db push --force-reset && prisma db seed",
