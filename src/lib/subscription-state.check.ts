@@ -38,7 +38,10 @@ function expectTransitionError(promise: Promise<unknown>, status: number, messag
   });
 }
 
-async function makePlan(name: string, options: { pausable?: boolean; closable?: boolean; renewable?: boolean } = {}) {
+async function makePlan(
+  name: string,
+  options: { pausable?: boolean; closable?: boolean; renewable?: boolean; endDate?: Date } = {},
+) {
   const plan = await db.plan.create({
     data: {
       name: `${prefix} ${name}`,
@@ -46,6 +49,7 @@ async function makePlan(name: string, options: { pausable?: boolean; closable?: 
       period: "MONTHLY",
       minQuantity: 1,
       startDate: day("2020-01-01"),
+      ...(options.endDate ? { endDate: options.endDate } : {}),
       pausable: options.pausable ?? true,
       closable: options.closable ?? true,
       renewable: options.renewable ?? true,
@@ -129,6 +133,10 @@ async function main() {
 
   const normalPlan = await makePlan("Normal");
   const restrictivePlan = await makePlan("Restrictive", { pausable: false, closable: false });
+  const endedPlan = await makePlan("Ended Restrictive", {
+    closable: false,
+    endDate: day("2026-05-09"),
+  });
   const notRenewablePlan = await makePlan("Not Renewable", { renewable: false });
   const futurePlan = await db.plan.create({
     data: {
@@ -208,6 +216,14 @@ async function main() {
     expiryDate: day("2026-05-09"),
   });
   assert.equal((await transition(expiredActive.id, "close", { id: "staff-check", role: Role.STAFF }, now)).status, "CLOSED");
+  const activeOnEndedPlan = await makeSubscription("active-on-ended-plan", endedPlan.id, {
+    status: "ACTIVE",
+  });
+  assert.equal(
+    (await transition(activeOnEndedPlan.id, "close", { id: "staff-check", role: Role.STAFF }, now)).status,
+    "CLOSED",
+    "an ended plan can close even when the subscription expiry date is later",
+  );
   const canceledDraft = await makeSubscription("cancel-draft", normalPlan.id);
   assert.equal((await transition(canceledDraft.id, "close", { id: "staff-check", role: Role.STAFF }, now)).status, "CLOSED");
 

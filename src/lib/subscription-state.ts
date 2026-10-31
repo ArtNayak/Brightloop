@@ -50,6 +50,10 @@ function isBeforeToday(value: Date | null, now: Date) {
   return value !== null && startOfUtcDay(value) < startOfUtcDay(now);
 }
 
+function isExpired(sub: ActionableSubscription, plan: Plan, now: Date) {
+  return isBeforeToday(sub.expiryDate, now) || isBeforeToday(plan.endDate, now);
+}
+
 function isOnOrBeforeToday(value: Date, now: Date) {
   return startOfUtcDay(value) <= startOfUtcDay(now);
 }
@@ -91,7 +95,7 @@ export function allowedActions(
   if (sub.status === "ACTIVE" && sub.paused) actions.push("resume");
   if (
     sub.status !== "CLOSED" &&
-    (sub.status !== "ACTIVE" || plan.closable || isBeforeToday(sub.expiryDate, now))
+    (sub.status !== "ACTIVE" || plan.closable || isExpired(sub, plan, now))
   ) {
     actions.push("close");
   }
@@ -153,7 +157,7 @@ function validateAction(
       break;
     case "close":
       if (sub.status === "CLOSED") invalidTransition(action, sub.status);
-      if (sub.status === "ACTIVE" && !sub.plan.closable && !isBeforeToday(sub.expiryDate, now)) {
+      if (sub.status === "ACTIVE" && !sub.plan.closable && !isExpired(sub, sub.plan, now)) {
         throw new SubscriptionTransitionError("This plan does not allow early closure", 409);
       }
       break;
