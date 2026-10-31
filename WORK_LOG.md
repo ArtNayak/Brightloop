@@ -43,3 +43,26 @@
 - `git diff --check` - passed.
 
 **Security/leakage review:** GET is restricted to ADMIN/STAFF; every mutation requires ADMIN before parsing the request. Staff receives no mutation controls. Unexpected API failures return generic messages. Role behavior was reviewed in the route and page code; database-backed HTTP role tests were not run because no `DATABASE_URL` is configured.
+
+## Person 2 - push 4/7: products and variants
+
+**Read:** project overview decisions D5-D9 and Person 2 T5 requirements. Kept the existing Prisma schema unchanged and used route handlers for mutations.
+
+**Plan:** add decimal-backed product and variant services with red-first regression coverage, ADMIN-only mutation routes and a read-only STAFF product experience, paginated/filterable product browsing, editing and inline variant CRUD. Return P3's active product-picker contract with string decimals and calculate displayed variant totals using the shared `unitPrice()` helper.
+
+**Implemented:** `/products` search by name, type/status filters, 25-row pagination, margin and tax columns, plus `/products/new` and `/products/[id]` detail/edit screens. Added all requested product/variant endpoints. Product removal deactivates products referenced by subscription or quotation lines and deletes unused products; used variants cannot be removed. Unique variant collisions return a friendly 409. Admin-only controls are omitted for STAFF and APIs enforce roles independently. Loading skeletons and empty states are included.
+
+**Red/green evidence:** before implementation, `npm run check:products` failed because `src/lib/catalog/products` did not exist. Final service suite passes 12/12, including tax validation, negative/precision validation, duplicate conflicts, used-line deletion rules, and foreign-key race fallback behavior.
+
+**Verification:**
+
+- `npm run typecheck` - passed.
+- `npm run check:products` - 12/12 passed.
+- `npm run check:taxes` - 9/9 passed.
+- `npm run check:catalog-seed` - passed.
+- `npm run check:period` - passed.
+- `npm run check:billing` - 20/20 passed.
+- `npm run build` - passed; includes all product and variant route handlers and pages.
+- `git diff --check` - passed.
+
+**Security/leakage review:** catalog list/details and picker routes require ADMIN or STAFF; every create/update/delete route calls `requireRole("ADMIN")` before parsing or mutating. Staff pages render details in read-only controls. Decimal prices are serialized as strings; unexpected route errors return generic messages. No schema changes. Role guards were reviewed in source; no database-backed HTTP role test was run because a configured test database is unavailable.
